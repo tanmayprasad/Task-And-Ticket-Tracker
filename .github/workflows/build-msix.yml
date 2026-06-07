@@ -21,7 +21,9 @@ jobs:
       uses: microsoft/setup-msbuild@v2
 
     - name: Restore NuGet packages
-      run: msbuild TaskTrackerApp.Packaging\TaskTrackerApp.Packaging.wapproj /t:Restore /p:Configuration=Release
+      run: |
+        dotnet restore TaskTrackerApp\TaskTrackerApp.csproj -r win-x64
+        msbuild TaskTrackerApp.Packaging\TaskTrackerApp.Packaging.wapproj /t:Restore /p:Configuration=Release /p:Platform=x64
 
     - name: Build MSIX bundle
       run: msbuild TaskTrackerApp.Packaging\TaskTrackerApp.Packaging.wapproj /p:Configuration=Release /p:Platform=x64 /p:UapAppxPackageBuildMode=StoreUpload /p:AppxBundle=Always /p:AppxPackageSigningEnabled=false
