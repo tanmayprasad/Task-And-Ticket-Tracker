@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="TaskTrackerApp.Tests/TaskTrackerApp.Tests.csproj" />
+  <Project Path="TaskTrackerApp/TaskTrackerApp.csproj" />
+  <Project Path="TaskTrackerApp.Packaging/TaskTrackerApp.Packaging.wapproj" />
+</Solution>

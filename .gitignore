@@ -1,0 +1,10 @@
+bin/
+obj/
+*.user
+.vs/
+Releases/
+publish_inno/
+publish_velopack/
+*.msix
+*.msixupload
+*.exe

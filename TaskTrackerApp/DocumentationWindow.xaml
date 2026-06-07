@@ -1,0 +1,40 @@
+<Window x:Class="TaskTrackerApp.DocumentationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Task Tracker Documentation" Height="600" Width="800"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBackground}" Foreground="{DynamicResource TextPrimary}"
+        FontFamily="Segoe UI Variable, Segoe UI">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <TextBlock Text="Task Tracker - Documentation" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,20"/>
+        
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,15,0">
+            <StackPanel>
+                <TextBlock Text="1. Core Concept" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBackground}" Margin="0,0,0,10"/>
+                <TextBlock Text="Task Tracker is designed to help you maintain focus by enforcing a strict 'One Active Task' rule. You can manage a backlog of tickets, but the system emphasizes completing the task currently in progress before moving on." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20"/>
+                
+                <TextBlock Text="2. Managing Tasks" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBackground}" Margin="0,0,0,10"/>
+                <TextBlock Text="• Adding Tasks: Enter a title (mandatory) and save. If no Ticket Number is provided, one will be auto-generated (e.g., i1, i2).&#x0a;• Editing Tasks: Click any task in the list to view its details on the right panel.&#x0a;• Drag &amp; Drop Prioritization: Click and drag the drag handle (≡) on any task to reorder it. Priority numbers are automatically updated." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20"/>
+                
+                <TextBlock Text="3. Active Task &amp; Focus Mode" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBackground}" Margin="0,0,0,10"/>
+                <TextBlock Text="• Activating a Task: Check the box in the 'ACTIVE' column to mark a task as your current focus. Doing so automatically changes its state to 'In progress'.&#x0a;• Rule of One: If you try to activate a second task, the system will warn you. You must deactivate or complete the current active task first.&#x0a;• Desktop Widget: The currently active task is displayed on a small, always-on-top desktop widget to keep you focused." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20"/>
+                
+                <TextBlock Text="4. UI Customization &amp; Filtering" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBackground}" Margin="0,0,0,10"/>
+                <TextBlock Text="• Themes: Open Settings (⚙) to switch between Light, Dark, or System themes.&#x0a;• Sidebar: Click the hamburger menu (≡) to collapse the sidebar and save screen real estate.&#x0a;• Filtering: Use the Search bar to filter by Title or Ticket Number. Use the 'States ▼' dropdown to toggle visibility of To Do, In progress, and Done tasks. Check 'Active Only' to see only your focused task." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20"/>
+
+                <TextBlock Text="5. System Tray &amp; Background Running" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBackground}" Margin="0,0,0,10"/>
+                <TextBlock Text="• Minimizing the app hides it to the System Tray instead of the Taskbar.&#x0a;• Double-click the tray icon to restore the window.&#x0a;• Right-click the tray icon to exit the application completely." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20"/>
+            </StackPanel>
+        </ScrollViewer>
+        
+        <Button Grid.Row="2" Content="Close" Width="100" Height="35" HorizontalAlignment="Right" Margin="0,20,0,0"
+                Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource TextPrimary}" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
+                Click="Close_Click"/>
+    </Grid>
+</Window>
