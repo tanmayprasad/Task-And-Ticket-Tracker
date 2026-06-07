@@ -1,0 +1,33 @@
+name: Build MSIX
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Restore NuGet packages
+      run: msbuild TaskTrackerApp.Packaging\TaskTrackerApp.Packaging.wapproj /t:Restore /p:Configuration=Release
+
+    - name: Build MSIX bundle
+      run: msbuild TaskTrackerApp.Packaging\TaskTrackerApp.Packaging.wapproj /p:Configuration=Release /p:Platform=x64 /p:UapAppxPackageBuildMode=StoreUpload /p:AppxBundle=Always /p:AppxPackageSigningEnabled=false
+
+    - name: Upload MSIX
+      uses: actions/upload-artifact@v3
+      with:
+        name: TaskTrackerApp-MSIX
+        path: TaskTrackerApp.Packaging\AppPackages\**\*.msixupload
