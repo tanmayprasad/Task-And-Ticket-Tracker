@@ -13,4 +13,13 @@ public class TaskModel
     public int Priority { get; set; } = 1;
     public DateTime? TargetDate { get; set; }
     public bool IsActive { get; set; }
+    
+    public System.Collections.ObjectModel.ObservableCollection<TicketStep> Steps { get; set; } = new();
+}
+
+public class TicketStep
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Description { get; set; } = string.Empty;
+    public bool IsDone { get; set; }
 }

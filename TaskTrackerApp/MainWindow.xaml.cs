@@ -286,6 +286,11 @@ public partial class MainWindow : Window
         }
         
         PriorityTextBox.Text = task.Priority.ToString();
+        
+        if (task.Steps == null)
+            task.Steps = new System.Collections.ObjectModel.ObservableCollection<TicketStep>();
+            
+        StepsListView.ItemsSource = task.Steps;
     }
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -662,6 +667,99 @@ public partial class MainWindow : Window
         else
         {
             SidebarColumnDef.Width = new GridLength(200);
+        }
+    }
+
+    private void AddStepButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentTask == null) return;
+        if (_currentTask.Steps == null) _currentTask.Steps = new System.Collections.ObjectModel.ObservableCollection<TicketStep>();
+        
+        _currentTask.Steps.Add(new TicketStep { Description = "" });
+        SaveAndRefresh();
+    }
+
+    private void StepCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        SaveAndRefresh();
+    }
+
+    private void RemoveStepButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is TicketStep step)
+        {
+            _currentTask?.Steps.Remove(step);
+            SaveAndRefresh();
+        }
+    }
+
+    private Point _stepsDragStartPoint;
+    private TicketStep? _draggedStep;
+
+    private void StepsListView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _stepsDragStartPoint = e.GetPosition(null);
+        
+        var frameworkElement = e.OriginalSource as FrameworkElement;
+        if (frameworkElement?.DataContext is TicketStep step)
+        {
+            if (frameworkElement is TextBlock tb && tb.Text == "\uE76F" || 
+                frameworkElement is Border b && b.Cursor == Cursors.SizeAll)
+            {
+                _draggedStep = step;
+            }
+            else
+            {
+                _draggedStep = null;
+            }
+        }
+    }
+
+    private void StepsListView_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed && _draggedStep != null)
+        {
+            Point position = e.GetPosition(null);
+            if (Math.Abs(position.X - _stepsDragStartPoint.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                Math.Abs(position.Y - _stepsDragStartPoint.Y) > SystemParameters.MinimumVerticalDragDistance)
+            {
+                var listView = sender as ListView;
+                if (listView != null)
+                {
+                    DragDrop.DoDragDrop(listView, _draggedStep, DragDropEffects.Move);
+                    _draggedStep = null;
+                }
+            }
+        }
+    }
+
+    private void StepsListView_DragEnter(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent(typeof(TicketStep)) || sender == e.Source)
+        {
+            e.Effects = DragDropEffects.None;
+        }
+    }
+
+    private void StepsListView_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(typeof(TicketStep)))
+        {
+            var droppedStep = e.Data.GetData(typeof(TicketStep)) as TicketStep;
+            if (droppedStep == null || _currentTask == null || _currentTask.Steps == null) return;
+
+            var targetElement = e.OriginalSource as FrameworkElement;
+            TicketStep? targetStep = targetElement?.DataContext as TicketStep;
+
+            int removeIdx = _currentTask.Steps.IndexOf(droppedStep);
+            int targetIdx = targetStep != null ? _currentTask.Steps.IndexOf(targetStep) : _currentTask.Steps.Count - 1;
+
+            if (removeIdx != -1 && targetIdx != -1 && removeIdx != targetIdx)
+            {
+                _currentTask.Steps.RemoveAt(removeIdx);
+                _currentTask.Steps.Insert(targetIdx, droppedStep);
+                SaveAndRefresh();
+            }
         }
     }
 }
