@@ -28,8 +28,25 @@ jobs:
     - name: Build MSIX bundle
       run: msbuild TaskTrackerApp.Packaging\TaskTrackerApp.Packaging.wapproj /p:Configuration=Release /p:Platform=x64 /p:UapAppxPackageBuildMode=StoreUpload /p:AppxBundle=Always /p:AppxPackageSigningEnabled=false /p:RuntimeIdentifier=win-x64
 
+    - name: Sign MSIX bundle
+      run: |
+        $cert = New-SelfSignedCertificate -Type Custom -Subject "CN=00F61C64-FF38-455E-8D55-F7094707F364" -KeyUsage DigitalSignature -FriendlyName "TaskTracker Store Cert" -CertStoreLocation "Cert:\CurrentUser\My" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+        $password = ConvertTo-SecureString -String "password" -Force -AsPlainText
+        Export-PfxCertificate -Cert $cert -FilePath "TaskTrackerApp.Packaging\TaskTrackerCert.pfx" -Password $password
+        Export-Certificate -Cert $cert -FilePath "TaskTrackerApp.Packaging\TaskTrackerCert.cer"
+        
+        $bundle = Get-ChildItem -Path TaskTrackerApp.Packaging\AppPackages\**\*.msixbundle
+        $upload = Get-ChildItem -Path TaskTrackerApp.Packaging\AppPackages\**\*.msixupload
+        $signtool = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
+        
+        & $signtool sign /fd SHA256 /a /f "TaskTrackerApp.Packaging\TaskTrackerCert.pfx" /p "password" $bundle.FullName
+        & $signtool sign /fd SHA256 /a /f "TaskTrackerApp.Packaging\TaskTrackerCert.pfx" /p "password" $upload.FullName
+
     - name: Upload MSIX
       uses: actions/upload-artifact@v4
       with:
         name: TaskTrackerApp-MSIX
-        path: TaskTrackerApp.Packaging\AppPackages\**\*.msixupload
+        path: |
+          TaskTrackerApp.Packaging\AppPackages\**\*.msixupload
+          TaskTrackerApp.Packaging\AppPackages\**\*.msixbundle
+          TaskTrackerApp.Packaging\TaskTrackerCert.cer
