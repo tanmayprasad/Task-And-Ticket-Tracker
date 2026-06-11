@@ -4,7 +4,7 @@ All notable changes to the **Task and Ticket Tracker** project will be documente
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to the specific versioning rules defined in `PACKAGING_CONFIG.md`.
 
-## [1.4.1.1] - Current Latest
+## [1.4.2.0] - Current Latest
 ### Fixed
 - Fixed Microsoft Store package conflicts and validation errors.
 - Compressed `Wide310x150Logo` image to strictly comply with the 200KB Microsoft Store limit.
