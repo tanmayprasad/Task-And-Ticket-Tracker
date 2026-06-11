@@ -9,6 +9,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>app.ico</ApplicationIcon>
+    <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
+    <EnableDefaultAppxManifest>false</EnableDefaultAppxManifest>
   </PropertyGroup>
 
   <ItemGroup>
