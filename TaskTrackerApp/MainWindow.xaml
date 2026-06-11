@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:tb="http://www.hardcodet.net/taskbar"
         xmlns:local="clr-namespace:TaskTrackerApp"
-        Title="Task Tracker - Manager" Height="700" Width="1000"
+        Title="Task And Ticket Tracker - Manager" Height="700" Width="1000"
         StateChanged="Window_StateChanged"
         Background="{DynamicResource WindowBackground}" Foreground="{DynamicResource TextSecondary}" WindowStartupLocation="CenterScreen"
         FontFamily="Segoe UI Variable, Segoe UI" Icon="pack://application:,,,/app.ico">
@@ -280,6 +280,47 @@
             </Setter>
         </Style>
         <local:LessThanConverter x:Key="LessThanConverter"/>
+        <Style x:Key="ToggleSwitchStyle" TargetType="{x:Type CheckBox}">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <StackPanel Orientation="Horizontal" Background="Transparent" Cursor="Hand">
+                            <Border x:Name="Border" Width="40" Height="20" Background="{DynamicResource ControlBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" VerticalAlignment="Center">
+                                <Ellipse x:Name="Knob" Width="14" Height="14" Fill="{DynamicResource TextMuted}" HorizontalAlignment="Left" Margin="2,0,2,0">
+                                    <Ellipse.RenderTransform>
+                                        <TranslateTransform X="0" />
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                            </Border>
+                            <ContentPresenter Margin="10,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource PrimaryColor}"/>
+                                <Setter TargetName="Knob" Property="Fill" Value="#FFFFFF"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Knob" Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" To="20" Duration="0:0:0.1" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Knob" Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" To="0" Duration="0:0:0.1" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
     </Window.Resources>
     
     <Border BorderBrush="{DynamicResource BorderLight}" BorderThickness="1">
@@ -290,13 +331,13 @@
             </Grid.RowDefinitions>
 
         <tb:TaskbarIcon x:Name="MyNotifyIcon"
-                        ToolTipText="Task Tracker"
-                        IconSource="pack://application:,,,/tray.ico"
+                        ToolTipText="Task And Ticket Tracker"
+                        IconSource="pack://application:,,,/app.ico"
                         TrayMouseDoubleClick="MyNotifyIcon_TrayMouseDoubleClick">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu Background="{DynamicResource ControlHover}" Foreground="{DynamicResource TextPrimary}" BorderBrush="#444" BorderThickness="1">
                     <MenuItem Header="Show Manager" Click="MenuItemShow_Click"/>
-                    <MenuItem Header="Test Notification" Click="MenuItemTest_Click"/>
+                    <MenuItem Header="Center Widget" Click="MenuItemCenterWidget_Click"/>
                     <Separator Background="{DynamicResource BorderBrush}"/>
                     <MenuItem Header="Exit" Click="MenuItemExit_Click"/>
                 </ContextMenu>
@@ -305,7 +346,7 @@
 
         <!-- Custom Title Bar -->
         <Grid Grid.Row="0" Background="{DynamicResource WindowBackground}">
-            <TextBlock Text="Task Tracker" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="15,0,0,0" FontWeight="SemiBold" FontSize="12"/>
+            <TextBlock Text="Task And Ticket Tracker" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="15,0,0,0" FontWeight="SemiBold" FontSize="12"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" WindowChrome.IsHitTestVisibleInChrome="True">
                 <Button Content="—" Width="45" Height="32" Background="Transparent" Foreground="{DynamicResource TextHighlight}" BorderThickness="0" FontSize="14" Cursor="Hand" Click="Minimize_Click"/>
                 <Button Content="✕" Width="45" Height="32" Background="Transparent" Foreground="{DynamicResource TextHighlight}" BorderThickness="0" FontSize="14" Cursor="Hand" Click="Close_Click"/>
@@ -338,7 +379,25 @@
                     </RadioButton>
                 </StackPanel>
                 <StackPanel VerticalAlignment="Bottom" Margin="0,0,0,20">
-                    <Button x:Name="ThemeToggleButton" Content="&#xE706;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" Padding="10" HorizontalAlignment="Center" Cursor="Hand" Click="ThemeToggle_Click" ToolTip="Toggle Theme" FontSize="16" Margin="0,0,0,10"/>
+                    <Button x:Name="ThemeToggleButton" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" Padding="20,15" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Cursor="Hand" Click="ThemeToggle_Click" ToolTip="Toggle Theme" Margin="0,0,0,5">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="ThemeIconTextBlock" Text="&#xE706;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Theme" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource ControlHover}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
                     <Button Background="Transparent" Foreground="{DynamicResource TextHighlight}" BorderThickness="0" Padding="20,15" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Cursor="Hand" FontWeight="SemiBold" Click="OpenSettings_Click">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Center"/>
@@ -370,9 +429,9 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition x:Name="TaskListColumn" Width="*"/>
+                        <ColumnDefinition x:Name="TasksDividerColumn" Width="Auto"/>
+                        <ColumnDefinition x:Name="TaskDetailsColumn" Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- Task List -->
@@ -434,10 +493,10 @@
                 <DataGrid x:Name="TasksDataGrid" Grid.Row="2" AutoGenerateColumns="False" SelectionChanged="TasksDataGrid_SelectionChanged" IsReadOnly="True" 
                           AllowDrop="True" Drop="TasksDataGrid_Drop" PreviewMouseLeftButtonDown="TasksDataGrid_PreviewMouseLeftButtonDown" MouseMove="TasksDataGrid_MouseMove">
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Width="30" IsReadOnly="True">
+                        <DataGridTemplateColumn Header="≡" Width="35" IsReadOnly="True">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="≡" Foreground="#666666" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Cursor="SizeAll"/>
+                                    <TextBlock Text="&#x22EE;&#x22EE;" Foreground="{DynamicResource TextPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Cursor="SizeAll" FontWeight="Bold" Margin="0,-2,0,0"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
@@ -446,6 +505,9 @@
                                 <Style TargetType="TextBlock">
                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                     <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                    <Setter Property="ToolTipService.InitialShowDelay" Value="100"/>
+                                    <Setter Property="ToolTip" Value="{Binding VstsNumber}"/>
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
@@ -455,6 +517,9 @@
                                     <Setter Property="Padding" Value="10,0,0,0"/>
                                     <Setter Property="HorizontalAlignment" Value="Left"/>
                                     <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                    <Setter Property="ToolTipService.InitialShowDelay" Value="100"/>
+                                    <Setter Property="ToolTip" Value="{Binding Title}"/>
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
@@ -505,101 +570,133 @@
             <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Width="1" Background="{DynamicResource ControlHover}" Visibility="{Binding Visibility, ElementName=DetailsPanel}"/>
 
             <!-- Task Details Form -->
-            <Grid Grid.Row="0" Grid.Column="2" Margin="30,10,30,20" Width="350" Visibility="{Binding Visibility, ElementName=DetailsPanel}">
+            <Grid x:Name="TaskDetailsGrid" Grid.Row="0" Grid.Column="2" Margin="30,10,30,20" Width="350" Visibility="{Binding Visibility, ElementName=DetailsPanel}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 
                 <ScrollViewer Grid.Row="0" Margin="0,0,0,15" Padding="0,0,20,0">
-                    <StackPanel x:Name="DetailsPanel" Visibility="Collapsed">
-                        <TextBlock Text="TASK DETAILS" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextHighlight}" Margin="0,0,0,25"/>
-
-                        <TextBlock Text="Ticket Number" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                        <TextBox x:Name="VstsTextBox" Margin="0,0,0,20"/>
-
-                        <TextBlock Text="Title" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                        <TextBox x:Name="TitleTextBox" Margin="0,0,0,20"/>
+                    <Grid x:Name="DetailsPanel" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/> <!-- Header -->
+                            <RowDefinition Height="*"/> <!-- Content -->
+                        </Grid.RowDefinitions>
                         
-                        <Grid Margin="0,0,0,20">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="15"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="State" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                <ComboBox x:Name="StateComboBox" Padding="8">
-                                    <ComboBoxItem Tag="To Do">
-                                        <Border CornerRadius="12" Padding="8,4" Background="{DynamicResource ControlHover}" HorizontalAlignment="Left">
-                                            <TextBlock Text="To Do" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
-                                        </Border>
-                                    </ComboBoxItem>
-                                    <ComboBoxItem Tag="In progress">
-                                        <Border CornerRadius="12" Padding="8,4" Background="#33F59E0B" HorizontalAlignment="Left">
-                                            <TextBlock Text="In progress" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource WarningColor}"/>
-                                        </Border>
-                                    </ComboBoxItem>
-                                    <ComboBoxItem Tag="Done">
-                                        <Border CornerRadius="12" Padding="8,4" Background="#3310B981" HorizontalAlignment="Left">
-                                            <TextBlock Text="Done" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SuccessColor}"/>
-                                        </Border>
-                                    </ComboBoxItem>
-                                </ComboBox>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Priority" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                <TextBox x:Name="PriorityTextBox" IsReadOnly="True" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource TextMuted}" ToolTip="Priority is managed by dragging items in the list."/>
-                            </StackPanel>
+                        <Grid Grid.Row="0" Margin="0,0,0,25">
+                            <TextBlock Text="TASK DETAILS" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextHighlight}" VerticalAlignment="Center"/>
+                            <Button x:Name="MaximizeDetailsButton" Content="&#xE922;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" HorizontalAlignment="Right" Click="ToggleMaximize_Click" Cursor="Hand" ToolTip="Toggle Full Screen" FontSize="14" Padding="5"/>
                         </Grid>
 
-                        <TextBlock Text="Target Date &amp; Time" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                        <Grid Margin="0,0,0,20">
+                        <Grid Grid.Row="1" x:Name="DetailsFormGrid">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="15"/>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition x:Name="DetailsRightColumn" Width="0"/>
                             </Grid.ColumnDefinitions>
-                            <Border BorderBrush="{DynamicResource BorderLight}" BorderThickness="1" CornerRadius="6" Width="150" Grid.Column="0" Background="{DynamicResource ControlBackground}">
-                                <DatePicker x:Name="TargetDatePicker" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" Padding="5,5,5,5">
-                                    <DatePicker.Resources>
-                                        <Style TargetType="DatePickerTextBox">
-                                            <Setter Property="Background" Value="Transparent"/>
-                                            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-                                            <Setter Property="BorderThickness" Value="0"/>
-                                            <Setter Property="Padding" Value="0"/>
-                                        </Style>
-                                    </DatePicker.Resources>
-                                </DatePicker>
-                            </Border>
                             
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="&#xE823;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource TextMuted}" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                <ComboBox x:Name="HourComboBox" SelectedIndex="0" Width="55" Padding="4" HorizontalContentAlignment="Center">
-                                    <ComboBoxItem Content="00"/><ComboBoxItem Content="01"/><ComboBoxItem Content="02"/><ComboBoxItem Content="03"/><ComboBoxItem Content="04"/><ComboBoxItem Content="05"/>
-                                    <ComboBoxItem Content="06"/><ComboBoxItem Content="07"/><ComboBoxItem Content="08"/><ComboBoxItem Content="09"/><ComboBoxItem Content="10"/><ComboBoxItem Content="11"/>
-                                    <ComboBoxItem Content="12"/><ComboBoxItem Content="13"/><ComboBoxItem Content="14"/><ComboBoxItem Content="15"/><ComboBoxItem Content="16"/><ComboBoxItem Content="17"/>
-                                    <ComboBoxItem Content="18"/><ComboBoxItem Content="19"/><ComboBoxItem Content="20"/><ComboBoxItem Content="21"/><ComboBoxItem Content="22"/><ComboBoxItem Content="23"/>
-                                </ComboBox>
-                                <TextBlock Text=":" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="5,0,5,0" FontWeight="Bold"/>
-                                <ComboBox x:Name="MinuteComboBox" SelectedIndex="0" Width="55" Padding="4" HorizontalContentAlignment="Center">
-                                    <ComboBoxItem Content="00"/><ComboBoxItem Content="15"/><ComboBoxItem Content="30"/><ComboBoxItem Content="45"/>
-                                </ComboBox>
-                            </StackPanel>
-                        </Grid>
+                            <StackPanel x:Name="ContentStack" Grid.Column="0" Margin="0">
+                                <StackPanel x:Name="MetadataSection1">
+                                    <TextBlock Text="Ticket Number" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <TextBox x:Name="VstsTextBox" Margin="0,0,0,20" MaxLength="50"/>
+                                </StackPanel>
 
-                        <TextBlock Text="Description" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                        <TextBox x:Name="DescriptionTextBox" Margin="0,0,0,20" Height="100" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+                                <TextBlock Text="Title *" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8" x:Name="TitleLabel"/>
+                                <TextBox x:Name="TitleTextBox" Margin="0,0,0,5" MaxLength="100"/>
+                                <TextBlock x:Name="TitleErrorText" Text="Title is a mandatory field." Foreground="#EF4444" FontSize="12" Margin="0,0,0,20" Visibility="Collapsed"/>
 
-                        <TextBlock Text="Acceptance Criteria (AC)" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                        <TextBox x:Name="AcTextBox" Margin="0,0,0,25" Height="100" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
-                        
-                        <!-- Steps Section -->
-                        <Grid Margin="0,0,0,8">
-                            <TextBlock Text="Steps" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <Button Content="+ Add Step" Style="{StaticResource ModernButton}" Background="Transparent" Foreground="{DynamicResource PrimaryColor}" Padding="0" HorizontalAlignment="Right" Click="AddStepButton_Click"/>
-                        </Grid>
-                        <ListView x:Name="StepsListView" Margin="0,0,0,25" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                <StackPanel x:Name="MetadataSection2">
+                                    <Grid Margin="0,0,0,20">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="15"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="State" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                            <ComboBox x:Name="StateComboBox" Padding="8">
+                                                <ComboBoxItem Tag="To Do">
+                                                    <Border CornerRadius="12" Padding="8,4" Background="{DynamicResource ControlHover}" HorizontalAlignment="Left">
+                                                        <TextBlock Text="To Do" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                                    </Border>
+                                                </ComboBoxItem>
+                                                <ComboBoxItem Tag="In progress">
+                                                    <Border CornerRadius="12" Padding="8,4" Background="#33F59E0B" HorizontalAlignment="Left">
+                                                        <TextBlock Text="In progress" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource WarningColor}"/>
+                                                    </Border>
+                                                </ComboBoxItem>
+                                                <ComboBoxItem Tag="Done">
+                                                    <Border CornerRadius="12" Padding="8,4" Background="#3310B981" HorizontalAlignment="Left">
+                                                        <TextBlock Text="Done" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SuccessColor}"/>
+                                                    </Border>
+                                                </ComboBoxItem>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Priority" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                            <TextBox x:Name="PriorityTextBox" IsReadOnly="True" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource TextMuted}" ToolTip="Priority is managed by dragging items in the list."/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <TextBlock Text="Target Date &amp; Time" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <Border BorderBrush="{DynamicResource BorderLight}" BorderThickness="1" CornerRadius="6" Margin="0,0,0,20" Background="{DynamicResource ControlBackground}">
+                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Margin="5">
+                                        <Grid Margin="5,0,5,0" Background="Transparent" Cursor="Hand" MouseLeftButtonUp="TargetDateGrid_MouseLeftButtonUp">
+                                            <StackPanel x:Name="VisualDateStack" Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
+                                                <TextBlock Text="&#xE787;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <TextBlock Text="{Binding SelectedDate, ElementName=TargetDatePicker, StringFormat=dd-MM-yyyy, TargetNullValue='Select Date'}" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" FontSize="14"/>
+                                            </StackPanel>
+                                            <DatePicker x:Name="TargetDatePicker" Opacity="0" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="{Binding ActualWidth, ElementName=VisualDateStack}" IsHitTestVisible="False"/>
+                                        </Grid>
+                                        
+                                        <Border Width="1" Height="20" Background="{DynamicResource BorderLight}" Margin="5,0,8,0"/>
+                                        
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,5,0">
+                                            <TextBlock Text="&#xE823;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource TextMuted}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <ComboBox x:Name="HourComboBox" SelectedIndex="0" Width="55" Padding="4" HorizontalContentAlignment="Center" Background="Transparent" BorderThickness="0">
+                                                <ComboBoxItem Content="00"/><ComboBoxItem Content="01"/><ComboBoxItem Content="02"/><ComboBoxItem Content="03"/><ComboBoxItem Content="04"/><ComboBoxItem Content="05"/>
+                                                <ComboBoxItem Content="06"/><ComboBoxItem Content="07"/><ComboBoxItem Content="08"/><ComboBoxItem Content="09"/><ComboBoxItem Content="10"/><ComboBoxItem Content="11"/>
+                                                <ComboBoxItem Content="12"/><ComboBoxItem Content="13"/><ComboBoxItem Content="14"/><ComboBoxItem Content="15"/><ComboBoxItem Content="16"/><ComboBoxItem Content="17"/>
+                                                <ComboBoxItem Content="18"/><ComboBoxItem Content="19"/><ComboBoxItem Content="20"/><ComboBoxItem Content="21"/><ComboBoxItem Content="22"/><ComboBoxItem Content="23"/>
+                                            </ComboBox>
+                                            <TextBlock Text=":" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="2,0,2,0" FontWeight="Bold"/>
+                                            <ComboBox x:Name="MinuteComboBox" SelectedIndex="0" Width="55" Padding="4" HorizontalContentAlignment="Center" Background="Transparent" BorderThickness="0">
+                                                <ComboBoxItem Content="00"/><ComboBoxItem Content="15"/><ComboBoxItem Content="30"/><ComboBoxItem Content="45"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                </StackPanel>
+
+                                <TextBlock Text="Description" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <TextBox x:Name="DescriptionTextBox" Margin="0,0,0,20" Height="100" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" MaxLength="2000"/>
+
+                                <TextBlock Text="Acceptance Criteria (AC)" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <TextBox x:Name="AcTextBox" Margin="0,0,0,25" Height="100" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" MaxLength="2000"/>
+                                
+                                <!-- Steps Section -->
+                                <TextBlock Text="Add Steps" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <Grid Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="NewStepTextBox" Grid.Column="0" Margin="0,0,10,0" KeyDown="NewStepTextBox_KeyDown"/>
+                                    <TextBlock Text="Enter step description..." IsHitTestVisible="False" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="10,0,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Text, ElementName=NewStepTextBox}" Value="">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <Button Grid.Column="1" Content="Add" Style="{StaticResource PrimaryButton}" Click="AddNewStep_Click" Padding="15,5"/>
+                                </Grid>
+                                
+                                <ListView x:Name="StepsListView" Margin="0,0,0,25" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                   AllowDrop="True" PreviewMouseLeftButtonDown="StepsListView_PreviewMouseLeftButtonDown" MouseMove="StepsListView_MouseMove" DragEnter="StepsListView_DragEnter" Drop="StepsListView_Drop">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
@@ -634,15 +731,14 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         
-                                        <Border Grid.Column="0" Background="Transparent" Cursor="SizeAll" VerticalAlignment="Center" Margin="4,0,8,0">
-                                            <TextBlock Text="&#xE76F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" 
-                                                       Foreground="{DynamicResource TextMuted}" FontSize="14" ToolTip="Drag to reorder"/>
+                                        <Border Grid.Column="0" Background="Transparent" Cursor="SizeAll" VerticalAlignment="Center" Margin="2,0,4,0">
+                                            <TextBlock Text="&#x22EE;&#x22EE;" 
+                                                       Foreground="{DynamicResource TextPrimary}" FontSize="16" ToolTip="Drag to reorder" FontWeight="Bold" Margin="0,-2,0,0"/>
                                         </Border>
                                                    
-                                        <CheckBox x:Name="StepCheckBox" Grid.Column="1" IsChecked="{Binding IsDone}" VerticalAlignment="Center" Margin="0,0,8,0" Click="StepCheckBox_Click"/>
+                                        <CheckBox x:Name="StepCheckBox" Grid.Column="1" IsChecked="{Binding IsDone}" VerticalAlignment="Center" Margin="0,0,6,0" Click="StepCheckBox_Click"/>
                                         
-                                        <TextBox Grid.Column="2" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" 
-                                                 Background="Transparent" BorderThickness="0" Padding="0,4" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="StepTextBox" Grid.Column="2" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" MinHeight="24" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                                  
                                         <Button Grid.Column="3" Content="&#xE74D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" 
                                                 Style="{StaticResource DangerButton}" BorderThickness="0" Background="Transparent" 
@@ -651,7 +747,12 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
-                    </StackPanel>
+                                <TextBlock x:Name="StepsErrorText" Text="Step text field can not be empty." Foreground="#EF4444" FontSize="12" Margin="0,5,0,0" Visibility="Collapsed"/>
+                            </StackPanel>
+                            
+                            <StackPanel x:Name="RightColumnStack" Grid.Column="1" Margin="30,0,0,0" Visibility="Collapsed"/>
+                        </Grid>
+                    </Grid>
                 </ScrollViewer>
             </Grid>
 
@@ -666,9 +767,9 @@
         </Grid> <!-- Close TasksTabContent -->
                 <Grid x:Name="AboutTabContent" Visibility="Collapsed" Margin="40">
                     <StackPanel>
-                        <TextBlock Text="About Task Tracker" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,20"/>
-                        <TextBlock Text="Task Tracker is a lightweight, context-aware productivity tool designed to help you stay focused on what matters." Foreground="{DynamicResource TextHighlight}" TextWrapping="Wrap" Margin="0,0,0,10" FontSize="14"/>
-                        <TextBlock Text="Version: 1.3.8" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,20"/>
+                        <TextBlock Text="About Task And Ticket Tracker" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,20"/>
+                        <TextBlock Text="Task And Ticket Tracker is a lightweight, context-aware productivity tool designed to help you stay focused on what matters." Foreground="{DynamicResource TextHighlight}" TextWrapping="Wrap" Margin="0,0,0,10" FontSize="14"/>
+                        <TextBlock Text="Version: 1.4.1.0" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,20"/>
                         
                         <TextBlock Text="Features:" FontWeight="Bold" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,10"/>
                         <TextBlock Text="• Drag-and-drop prioritization" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,5"/>
@@ -683,62 +784,147 @@
                         <TextBlock Text="© 2026 Your Company. All rights reserved." Foreground="{DynamicResource TextDark}" FontSize="12" Margin="0,20,0,0"/>
                     </StackPanel>
                 </Grid>
-            </Grid>
             
-            <!-- Settings Overlay Modal -->
-            <Grid x:Name="SettingsOverlay" Grid.Column="1" Visibility="Collapsed" Background="{DynamicResource OverlayBackground}">
-                <Border Background="{DynamicResource PanelBackground}" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="8" Width="400" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="30">
-                    <StackPanel>
-                        <TextBlock Text="Settings" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,20"/>
-                        
-                        <StackPanel Margin="0,0,0,20">
-                            <TextBlock Text="Notifications" Foreground="{DynamicResource TextMuted}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                            <CheckBox x:Name="NotificationsToggle" Content="Enable Task Reminders" Foreground="{DynamicResource TextPrimary}" Cursor="Hand">
-                                <CheckBox.LayoutTransform>
-                                    <ScaleTransform ScaleX="1.2" ScaleY="1.2" />
-                                </CheckBox.LayoutTransform>
-                            </CheckBox>
-                        </StackPanel>
-                        
-                        <StackPanel Margin="0,0,0,20">
-                            <TextBlock Text="Alert Timer (Hours before deadline)" Foreground="{DynamicResource TextMuted}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                            <TextBox x:Name="AlertTimerTextBox" Width="100" HorizontalAlignment="Left" Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource TextPrimary}" Padding="5"/>
-                        </StackPanel>
-                        
-                        <StackPanel Margin="0,0,0,20">
-                            <TextBlock Text="Max Active Tasks" Foreground="{DynamicResource TextMuted}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                            <TextBox x:Name="MaxActiveTasksTextBox" Width="100" HorizontalAlignment="Left" Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource TextPrimary}" Padding="5"/>
-                        </StackPanel>
-                        
-                        <StackPanel Margin="0,0,0,20">
-                            <TextBlock Text="Theme" Foreground="{DynamicResource TextMuted}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                            <ComboBox x:Name="ThemeComboBox" Width="150" HorizontalAlignment="Left" SelectedIndex="1">
-                                <ComboBoxItem Content="System"/>
-                                <ComboBoxItem Content="Dark"/>
-                                <ComboBoxItem Content="Light"/>
-                            </ComboBox>
-                        </StackPanel>
+            <!-- Settings Tab Content -->
+            <Grid x:Name="SettingsTabContent" Grid.Column="1" Visibility="Collapsed" MaxWidth="1024" HorizontalAlignment="Stretch" Margin="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                        <StackPanel Margin="0,0,0,30">
-                            <TextBlock Text="Widget Settings" Foreground="{DynamicResource TextMuted}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                <TextBlock Text="Text Size:" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <TextBox x:Name="WidgetTextSizeTextBox" Width="50" Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource TextPrimary}" Padding="5"/>
+                <!-- Header -->
+                <StackPanel Grid.Row="0" Margin="40,40,40,30">
+                    <TextBlock Text="APPLICATION SETTINGS" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock Text="Configure your workspace and notification preferences" Foreground="{DynamicResource TextMuted}" FontSize="14" Margin="0,5,0,0"/>
+                </StackPanel>
+
+                <!-- Scrollable Content -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="40,0,40,0">
+                    <!-- Two-Column Grid -->
+                    <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Column -->
+                    <StackPanel Grid.Column="0">
+                        <!-- General Settings Card -->
+                        <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock Text="General" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,10"/>
+                                <Border BorderBrush="{DynamicResource BorderLight}" BorderThickness="0,0,0,1" Margin="0,0,0,20"/>
+
+                                <StackPanel Margin="0,0,0,20">
+                                    <TextBlock Text="Max Active Tasks *" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Limit the number of tasks in progress" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,8"/>
+                                    <TextBox x:Name="MaxActiveTasksTextBox" Width="100" HorizontalAlignment="Left" Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource TextPrimary}" Padding="5" MaxLength="3" PreviewTextInput="NumericOnly_PreviewTextInput" Margin="0,0,0,5"/>
+                                    <TextBlock x:Name="MaxActiveTasksErrorText" Text="Must be greater than 0." Foreground="#EF4444" FontSize="12" Margin="0,0,0,0" Visibility="Collapsed"/>
+                                </StackPanel>
+
+                                <StackPanel Margin="0,0,0,20">
+                                    <TextBlock Text="App Theme" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Select your preferred color scheme" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,8"/>
+                                    <ComboBox x:Name="ThemeComboBox" Width="150" HorizontalAlignment="Left" SelectedIndex="1" SelectionChanged="ThemeComboBox_SelectionChanged">
+                                        <ComboBoxItem Content="System"/>
+                                        <ComboBoxItem Content="Dark"/>
+                                        <ComboBoxItem Content="Light"/>
+                                    </ComboBox>
+                                </StackPanel>
                             </StackPanel>
-                            <CheckBox x:Name="WidgetTextBoldToggle" Content="Bold Text" Foreground="{DynamicResource TextPrimary}" Cursor="Hand">
-                                <CheckBox.LayoutTransform>
-                                    <ScaleTransform ScaleX="1.2" ScaleY="1.2" />
-                                </CheckBox.LayoutTransform>
-                            </CheckBox>
-                        </StackPanel>
-                        
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Cancel" Style="{StaticResource ModernButton}" Background="Transparent" Foreground="{DynamicResource TextHighlight}" Margin="0,0,10,0" Click="CancelSettings_Click"/>
-                            <Button Content="Save" Style="{StaticResource PrimaryButton}" Click="SaveSettings_Click"/>
-                        </StackPanel>
+                        </Border>
+
+                        <!-- Notifications Card -->
+                        <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                            <StackPanel>
+                                <TextBlock Text="Notifications" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,10"/>
+                                <Border BorderBrush="{DynamicResource BorderLight}" BorderThickness="0,0,0,1" Margin="0,0,0,20"/>
+
+                                <StackPanel Margin="0,0,0,20" Orientation="Horizontal" HorizontalAlignment="Stretch">
+                                    <StackPanel Width="250">
+                                        <TextBlock Text="Enable Task Reminders" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Receive alerts before task deadlines" Foreground="{DynamicResource TextMuted}" FontSize="12"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="NotificationsToggle" Style="{StaticResource ToggleSwitchStyle}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                                </StackPanel>
+
+                                <StackPanel x:Name="AlertTimerPanel" Margin="0,0,0,10">
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsChecked, ElementName=NotificationsToggle}" Value="False">
+                                                    <Setter Property="Opacity" Value="0.4"/>
+                                                    <Setter Property="IsHitTestVisible" Value="False"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+                                    <TextBlock Text="Alert Timer (Hours) *" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Hours before deadline to send a reminder" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,8"/>
+                                    <TextBox x:Name="AlertTimerTextBox" Width="100" HorizontalAlignment="Left" Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource TextPrimary}" Padding="5" MaxLength="4" PreviewTextInput="NumericOnly_PreviewTextInput" Margin="0,0,0,5"/>
+                                    <TextBlock x:Name="AlertTimerErrorText" Text="Must be 0 or a positive number." Foreground="#EF4444" FontSize="12" Margin="0,0,0,0" Visibility="Collapsed"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Right Column -->
+                    <StackPanel Grid.Column="2">
+                        <!-- Desktop Widget Card -->
+                        <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                            <StackPanel>
+                                <TextBlock Text="Desktop Widget" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,10"/>
+                                <Border BorderBrush="{DynamicResource BorderLight}" BorderThickness="0,0,0,1" Margin="0,0,0,20"/>
+
+                                <StackPanel Margin="0,0,0,20">
+                                    <TextBlock Text="Widget Theme" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Color scheme for the floating widget" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,8"/>
+                                    <ComboBox x:Name="WidgetThemeComboBox" Width="150" HorizontalAlignment="Left" SelectedIndex="0">
+                                        <ComboBoxItem Content="Dark"/>
+                                        <ComboBoxItem Content="Light"/>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Margin="0,0,0,20">
+                                    <TextBlock Text="Text Size *" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Font size for widget text" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,8"/>
+                                    <TextBox x:Name="WidgetTextSizeTextBox" Width="100" HorizontalAlignment="Left" Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource TextPrimary}" Padding="5" MaxLength="3" PreviewTextInput="NumericOnly_PreviewTextInput" Margin="0,0,0,5"/>
+                                    <TextBlock x:Name="WidgetTextSizeErrorText" Text="Must be between 8 and 72." Foreground="#EF4444" FontSize="12" Margin="0,0,0,0" Visibility="Collapsed"/>
+                                </StackPanel>
+
+                                <StackPanel Margin="0,0,0,20" Orientation="Horizontal" HorizontalAlignment="Stretch">
+                                    <StackPanel Width="250">
+                                        <TextBlock Text="Bold Text" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Use bold weight for widget fonts" Foreground="{DynamicResource TextMuted}" FontSize="12"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="WidgetTextBoldToggle" Style="{StaticResource ToggleSwitchStyle}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                                </StackPanel>
+
+                                <StackPanel Margin="0,0,0,10">
+                                    <TextBlock Text="Widget Opacity" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Adjust transparency of the widget" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,8"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Slider x:Name="WidgetOpacitySlider" Minimum="0.1" Maximum="1.0" Value="0.95" Width="200" HorizontalAlignment="Left" TickFrequency="0.05" IsSnapToTickEnabled="True"/>
+                                        <TextBlock Text="{Binding Value, ElementName=WidgetOpacitySlider, StringFormat={}{0:P0}}" Foreground="{DynamicResource TextHighlight}" FontFamily="Consolas" VerticalAlignment="Center" Margin="15,0,0,0"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+                </ScrollViewer>
+
+                <!-- Sticky Footer -->
+                <Border Grid.Row="2" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="40,20" Margin="0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Discard Changes" Style="{StaticResource ModernButton}" Background="Transparent" Foreground="{DynamicResource TextHighlight}" Margin="0,0,15,0" Click="CancelSettings_Click"/>
+                        <Button Content="Save Preferences" Style="{StaticResource PrimaryButton}" Click="SaveSettings_Click" Padding="20,10"/>
                     </StackPanel>
                 </Border>
             </Grid>
+        </Grid>
         </Grid>
     </Grid>
     </Border>

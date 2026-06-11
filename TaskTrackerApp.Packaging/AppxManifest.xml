@@ -11,7 +11,7 @@
     Version="1.3.8.1" />
 
   <Properties>
-    <DisplayName>Task Tracker</DisplayName>
+    <DisplayName>Task And Ticket Tracker</DisplayName>
     <PublisherDisplayName>Tanmay Prasad</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
   </Properties>
@@ -30,8 +30,8 @@
       Executable="TaskTrackerApp.exe"
       EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="Task Tracker"
-        Description="Task Tracker is a lightweight, context-aware productivity tool designed to help you stay focused."
+        DisplayName="Task And Ticket Tracker"
+        Description="Task And Ticket Tracker is a lightweight, context-aware productivity tool designed to help you stay focused."
         BackgroundColor="#18181A"
         Square150x150Logo="Images\Square150x150Logo.png"
         Square44x44Logo="Images\Square44x44Logo.png">
