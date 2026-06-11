@@ -36,11 +36,9 @@ jobs:
         Export-Certificate -Cert $cert -FilePath "TaskTrackerApp.Packaging\TaskTrackerCert.cer"
         
         $bundle = Get-ChildItem -Path TaskTrackerApp.Packaging\AppPackages\**\*.msixbundle
-        $upload = Get-ChildItem -Path TaskTrackerApp.Packaging\AppPackages\**\*.msixupload
         $signtool = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
         
         & $signtool sign /fd SHA256 /a /f "TaskTrackerApp.Packaging\TaskTrackerCert.pfx" /p "password" $bundle.FullName
-        & $signtool sign /fd SHA256 /a /f "TaskTrackerApp.Packaging\TaskTrackerCert.pfx" /p "password" $upload.FullName
 
     - name: Upload MSIX
       uses: actions/upload-artifact@v4
