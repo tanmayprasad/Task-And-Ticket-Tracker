@@ -8,7 +8,7 @@
   <Identity
     Name="TanmayPrasad.TaskAndTicketTracker"
     Publisher="CN=00F61C64-FF38-455E-8D55-F7094707F364"
-    Version="1.4.1.0" />
+    Version="1.4.2.0" />
 
   <Properties>
     <DisplayName>Task And Ticket Tracker</DisplayName>
