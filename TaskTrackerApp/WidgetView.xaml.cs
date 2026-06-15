@@ -32,8 +32,25 @@ public partial class WidgetView : Window
 
     public void SetActiveTasks(List<TaskModel> tasks)
     {
+        var currentTaskId = (_activeTasks != null && _currentIndex >= 0 && _currentIndex < _activeTasks.Count) 
+            ? _activeTasks[_currentIndex].Id 
+            : Guid.Empty;
+            
         _activeTasks = tasks ?? new List<TaskModel>();
+        
         _currentIndex = 0;
+        if (currentTaskId != Guid.Empty)
+        {
+            for (int i = 0; i < _activeTasks.Count; i++)
+            {
+                if (_activeTasks[i].Id == currentTaskId)
+                {
+                    _currentIndex = i;
+                    break;
+                }
+            }
+        }
+        
         RefreshCarousel();
     }
 
@@ -56,7 +73,9 @@ public partial class WidgetView : Window
             ActiveTaskTextBlock.Foreground = new SolidColorBrush(Color.FromRgb(30, 30, 30));
             ActiveVstsTextBlock.Foreground = new SolidColorBrush(Color.FromRgb(30, 136, 229));
             if (WidgetStepTextBlock != null) WidgetStepTextBlock.Foreground = new SolidColorBrush(Color.FromRgb(50, 50, 50));
-            if (DragHandle != null) DragHandle.Foreground = new SolidColorBrush(Color.FromRgb(180, 180, 180));
+            if (DragHandle != null) DragHandle.Foreground = new SolidColorBrush(Color.FromRgb(120, 120, 120));
+            if (MaximizeBtn != null) MaximizeBtn.Foreground = new SolidColorBrush(Color.FromRgb(120, 120, 120));
+            if (CloseBtn != null) CloseBtn.Foreground = new SolidColorBrush(Color.FromRgb(120, 120, 120));
         }
         else
         {
@@ -64,7 +83,9 @@ public partial class WidgetView : Window
             ActiveTaskTextBlock.Foreground = new SolidColorBrush(Color.FromRgb(255, 255, 255));
             ActiveVstsTextBlock.Foreground = new SolidColorBrush(Color.FromRgb(100, 181, 246));
             if (WidgetStepTextBlock != null) WidgetStepTextBlock.Foreground = new SolidColorBrush(Color.FromRgb(238, 238, 238));
-            if (DragHandle != null) DragHandle.Foreground = new SolidColorBrush(Color.FromRgb(85, 85, 85));
+            if (DragHandle != null) DragHandle.Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150));
+            if (MaximizeBtn != null) MaximizeBtn.Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150));
+            if (CloseBtn != null) CloseBtn.Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150));
         }
     }
 
@@ -227,35 +248,30 @@ public partial class WidgetView : Window
         if (task.Steps != null && task.Steps.Count > 0 && _currentStepIndex < task.Steps.Count)
         {
             task.Steps[_currentStepIndex].IsDone = WidgetStepCheckBox.IsChecked ?? false;
-            // The steps are still bound inside MainWindow, so we should call SaveAndRefresh
-            // to persist the checkmark state immediately to the file.
-            _mainWindow.NotifyTaskUpdatedFromWidget(task);
-            _mainWindow.SaveAndRefresh();
             
-            // Auto-advance to the next incomplete step
+            // Auto-advance to the first incomplete priority step
             if (task.Steps[_currentStepIndex].IsDone)
             {
                 int nextIndex = -1;
-                // search forward
-                for (int i = _currentStepIndex + 1; i < task.Steps.Count; i++) 
+                for (int i = 0; i < task.Steps.Count; i++) 
                 {
-                    if (!task.Steps[i].IsDone) { nextIndex = i; break; }
-                }
-                // wrap around if necessary
-                if (nextIndex == -1) 
-                {
-                    for (int i = 0; i < _currentStepIndex; i++) 
-                    {
-                        if (!task.Steps[i].IsDone) { nextIndex = i; break; }
+                    if (!task.Steps[i].IsDone) 
+                    { 
+                        nextIndex = i; 
+                        break; 
                     }
                 }
                 
                 if (nextIndex != -1) 
                 {
                     _currentStepIndex = nextIndex;
-                    RefreshCarousel();
                 }
             }
+
+            // The steps are still bound inside MainWindow, so we should call SaveAndRefresh
+            // to persist the checkmark state immediately to the file.
+            _mainWindow.NotifyTaskUpdatedFromWidget(task);
+            _mainWindow.SaveAndRefresh();
         }
     }
 

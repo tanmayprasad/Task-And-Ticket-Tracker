@@ -156,7 +156,7 @@
                         <Style TargetType="TextBlock">
                             <Setter Property="Opacity" Value="0"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Grid}}" Value="True">
+                                <DataTrigger Binding="{Binding IsMouseOver, ElementName=MainBorder}" Value="True">
                                     <Setter Property="Opacity" Value="1"/>
                                 </DataTrigger>
                             </Style.Triggers>
@@ -165,8 +165,18 @@
                 </TextBlock>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="⛶" Click="MaximizeButton_Click" Style="{StaticResource WindowControlBtn}" ToolTip="Open Manager" FontSize="12" Margin="0,0,2,0" Padding="4,2"/>
-                    <Button Content="✕" Click="HideButton_Click" Style="{StaticResource CloseBtnStyle}" ToolTip="Minimize to Tray" FontSize="10" Padding="4,2"/>
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Opacity" Value="0"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMouseOver, ElementName=MainBorder}" Value="True">
+                                    <Setter Property="Opacity" Value="1"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <Button x:Name="MaximizeBtn" Content="⛶" Click="MaximizeButton_Click" Style="{StaticResource WindowControlBtn}" ToolTip="Open Manager" FontSize="12" Margin="0,0,2,0" Padding="4,2"/>
+                    <Button x:Name="CloseBtn" Content="✕" Click="HideButton_Click" Style="{StaticResource CloseBtnStyle}" ToolTip="Minimize to Tray" FontSize="10" Padding="4,2"/>
                 </StackPanel>
             </Grid>
             
@@ -212,7 +222,7 @@
                                             <ScaleTransform ScaleX="0.8" ScaleY="0.8"/>
                                         </CheckBox.LayoutTransform>
                                     </CheckBox>
-                                    <TextBlock x:Name="WidgetStepTextBlock" Grid.Column="1" Foreground="#EEEEEE" FontSize="13" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="WidgetStepTextBlock" Grid.Column="1" Foreground="#EEEEEE" FontSize="13" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" ToolTipService.InitialShowDelay="{StaticResource HoverDelay}"/>
                                 </Grid>
                             </Border>
 

@@ -58,20 +58,31 @@ public class NotificationService
 
     public void ShowTaskReminder(string taskTitle, string taskDetails)
     {
+        string title = "Task Reminder";
+        string extra = taskTitle;
+        string details = taskDetails;
+
         try
         {
             // The Obfuscated Payload Strategy
             bool hideDetails = _contextEngine.IsInDistractionState;
 
-            string title = hideDetails ? "Background Task Active" : "Task Reminder";
-            string details = hideDetails ? "Focus session in progress." : taskDetails;
-            string extra = hideDetails ? "" : taskTitle;
+            title = hideDetails ? "Background Task Active" : "Task Reminder";
+            details = hideDetails ? "Focus session in progress." : taskDetails;
+            extra = hideDetails ? "" : taskTitle;
 
-            _showToastAction?.Invoke(title, $"{extra}\n{details}");
+            var xml = ToastNotificationManager.GetTemplateContent(ToastTemplateType.ToastText02);
+            var textElements = xml.GetElementsByTagName("text");
+            textElements[0].AppendChild(xml.CreateTextNode(title));
+            textElements[1].AppendChild(xml.CreateTextNode($"{extra}\n{details}"));
+
+            var toast = new ToastNotification(xml);
+            ToastNotificationManager.CreateToastNotifier().Show(toast);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to show toast: {ex.Message}");
+            Debug.WriteLine($"Failed to show native toast: {ex.Message}");
+            _showToastAction?.Invoke(title, $"{extra}\n{details}");
         }
     }
 }

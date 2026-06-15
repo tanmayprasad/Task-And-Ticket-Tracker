@@ -417,7 +417,7 @@ public partial class MainWindow : Window
             if (!ContentStack.Children.Contains(MetadataSection1))
             {
                 ContentStack.Children.Insert(0, MetadataSection1);
-                ContentStack.Children.Insert(3, MetadataSection2);
+                ContentStack.Children.Insert(4, MetadataSection2);
             }
         }
     }
@@ -452,6 +452,8 @@ public partial class MainWindow : Window
 
     private void PopulateForm(TaskModel task)
     {
+        if (TitleErrorText != null) TitleErrorText.Visibility = Visibility.Collapsed;
+        if (StepsErrorText != null) StepsErrorText.Visibility = Visibility.Collapsed;
         VstsTextBox.Text = task.VstsNumber;
         TitleTextBox.Text = task.Title;
         DescriptionTextBox.Text = task.Description;
@@ -862,6 +864,20 @@ public partial class MainWindow : Window
         {
             DragDrop.DoDragDrop(_draggedRow, _draggedRow.Item, DragDropEffects.Move);
             _draggedRow = null; // Reset after drop starts
+        }
+    }
+        
+    private void TasksDataGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (TasksDataGrid.ActualWidth > 0)
+        {
+            // Width of all fixed columns + vertical scrollbar approximate width + padding
+            double otherColumnsWidth = 35 + 70 + 100 + 130 + 80 + 30; 
+            double availableWidth = TasksDataGrid.ActualWidth - otherColumnsWidth;
+            
+            if (availableWidth < 250) availableWidth = 250;
+            
+            TitleColumn.Width = new DataGridLength(availableWidth);
         }
     }
 
