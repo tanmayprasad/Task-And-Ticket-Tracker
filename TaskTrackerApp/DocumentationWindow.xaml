@@ -1,40 +1,282 @@
 <Window x:Class="TaskTrackerApp.DocumentationWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Task And Ticket Tracker Documentation" Height="600" Width="800"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        Title="User guide — Task And Ticket Tracker" Height="720" Width="860" MinWidth="560" MinHeight="420"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource WindowBackground}" Foreground="{DynamicResource TextPrimary}"
         FontFamily="Segoe UI Variable, Segoe UI">
-    <Grid Margin="20">
+    <Window.Resources>
+
+        <!-- Section heading: icon + title -->
+        <Style x:Key="H2" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="17"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="H2Icon" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryBackground}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+        </Style>
+
+        <Style x:Key="Lead" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextHighlight}"/>
+            <Setter Property="LineHeight" Value="21"/>
+            <Setter Property="Margin" Value="0,12,0,4"/>
+        </Style>
+
+        <!-- Bulleted list: put <sys:String> items inside an ItemsControl with this style -->
+        <Style x:Key="Bullets" TargetType="ItemsControl">
+            <Setter Property="Margin" Value="0,10,0,0"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="ItemTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <Grid Margin="0,0,0,7">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="18"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="•" Foreground="{DynamicResource PrimaryBackground}" FontWeight="Bold" FontSize="13.5"/>
+                            <TextBlock Grid.Column="1" Text="{Binding}" TextWrapping="Wrap" FontSize="13.5" LineHeight="21" Foreground="{DynamicResource TextSecondary}"/>
+                        </Grid>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Keyboard key cap -->
+        <Style x:Key="KeyCap" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource ControlBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderMedium}"/>
+            <Setter Property="BorderThickness" Value="1,1,1,2"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+        <Style x:Key="KeyText" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        </Style>
+        <Style x:Key="KeyDesc" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+            <Setter Property="Margin" Value="16,3,0,8"/>
+        </Style>
+
+    </Window.Resources>
+
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
-        <TextBlock Text="Task And Ticket Tracker - Documentation" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,20"/>
-        
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,15,0">
-            <StackPanel>
-                <TextBlock Text="1. Core Concept" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBackground}" Margin="0,0,0,10"/>
-                <TextBlock Text="Task And Ticket Tracker is designed to help you maintain focus by enforcing a strict 'One Active Task' rule. You can manage a backlog of tickets, but the system emphasizes completing the task currently in progress before moving on." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20"/>
-                
-                <TextBlock Text="2. Managing Tasks" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBackground}" Margin="0,0,0,10"/>
-                <TextBlock Text="• Adding Tasks: Enter a title (mandatory) and save. If no Ticket Number is provided, one will be auto-generated (e.g., i1, i2).&#x0a;• Editing Tasks: Click any task in the list to view its details on the right panel.&#x0a;• Drag &amp; Drop Prioritization: Click and drag the drag handle (≡) on any task to reorder it. Priority numbers are automatically updated." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20"/>
-                
-                <TextBlock Text="3. Active Task &amp; Focus Mode" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBackground}" Margin="0,0,0,10"/>
-                <TextBlock Text="• Activating a Task: Check the box in the 'ACTIVE' column to mark a task as your current focus. Doing so automatically changes its state to 'In progress'.&#x0a;• Rule of One: If you try to activate a second task, the system will warn you. You must deactivate or complete the current active task first.&#x0a;• Desktop Widget: The currently active task is displayed on a small, always-on-top desktop widget to keep you focused." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20"/>
-                
-                <TextBlock Text="4. UI Customization &amp; Filtering" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBackground}" Margin="0,0,0,10"/>
-                <TextBlock Text="• Themes: Open Settings (⚙) to switch between Light, Dark, or System themes.&#x0a;• Sidebar: Click the hamburger menu (≡) to collapse the sidebar and save screen real estate.&#x0a;• Filtering: Use the Search bar to filter by Title or Ticket Number. Use the 'States ▼' dropdown to toggle visibility of To Do, In progress, and Done tasks. Check 'Active Only' to see only your focused task." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20"/>
 
-                <TextBlock Text="5. System Tray &amp; Background Running" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBackground}" Margin="0,0,0,10"/>
-                <TextBlock Text="• Minimizing the app hides it to the System Tray instead of the Taskbar.&#x0a;• Double-click the tray icon to restore the window.&#x0a;• Right-click the tray icon to exit the application completely." TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20"/>
+        <!-- Header -->
+        <StackPanel Margin="32,24,32,16">
+            <TextBlock Text="User guide" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Text="Capture tasks quickly, focus on one or two at a time, and keep them in view without getting in the way."
+                       FontSize="13.5" TextWrapping="Wrap" Foreground="{DynamicResource TextMuted}" Margin="0,6,0,0"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="32,0,24,0">
+            <StackPanel Margin="0,0,8,8">
+
+                <!-- 1. Quick start -->
+                <Border Style="{StaticResource Card}" Padding="22,18" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource H2Icon}" Text="&#xE945;"/>
+                            <TextBlock Style="{StaticResource H2}" Text="Quick start"/>
+                        </StackPanel>
+                        <ItemsControl Style="{StaticResource Bullets}">
+                            <sys:String>Type a task in the “Add a task” box above the list and press Enter.</sys:String>
+                            <sys:String>Click the ☆ star on the one or two tasks you are working on right now.</sys:String>
+                            <sys:String>Minimize the app (—) to keep your active task in view on the desktop widget.</sys:String>
+                            <sys:String>Tick off steps as you go, and press ✓ on the widget when the task is done. The next task is picked for you.</sys:String>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 2. Adding tasks -->
+                <Border Style="{StaticResource Card}" Padding="22,18" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource H2Icon}" Text="&#xE710;"/>
+                            <TextBlock Style="{StaticResource H2}" Text="Adding tasks"/>
+                        </StackPanel>
+                        <ItemsControl Style="{StaticResource Bullets}">
+                            <sys:String>Quick add — type a title above the list and press Enter. It is added to the bottom as To Do. Start with #123 or a key like AB-12 to set the ticket number. Ctrl+Enter opens the full form instead.</sys:String>
+                            <sys:String>Full form — click New task (Ctrl+N). The cursor starts in Title, the only required field.</sys:String>
+                            <sys:String>Steps — press Enter to add each step, or paste a list to add one step per line. Drag the ⋮⋮ handle to reorder.</sys:String>
+                            <sys:String>Ticket number — leave it empty to use the automatic number shown in the box (for example “Auto: i18”).</sys:String>
+                            <sys:String>Start now — makes the task active and In progress straight away, within your active-task limit. Leave it off to queue the task as To Do.</sys:String>
+                            <sys:String>Add to Top or Bottom — decides where the new task goes in your priority list.</sys:String>
+                            <sys:String>Due date — choose Today, Tomorrow or Next week, or click the date to pick one. Add a time only if it matters; without one the task is due all day.</sys:String>
+                            <sys:String>Save task (Ctrl+S), or Save &amp; new (Ctrl+Enter) to go straight on to the next task. If you leave a form with unsaved edits, you are asked whether to keep editing, discard or save.</sys:String>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 3. The task list -->
+                <Border Style="{StaticResource Card}" Padding="22,18" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource H2Icon}" Text="&#xE8FD;"/>
+                            <TextBlock Style="{StaticResource H2}" Text="The task list"/>
+                        </StackPanel>
+                        <ItemsControl Style="{StaticResource Bullets}">
+                            <sys:String># is the priority (1 = most important). Drag a row up or down to change it.</sys:String>
+                            <sys:String>Under each title you see the due date (amber = due today, red = overdue) and step progress, for example 2/5.</sys:String>
+                            <sys:String>Active tasks have a coloured bar on the left. Done tasks are struck through.</sys:String>
+                            <sys:String>Click a task to open its details. The expand button shows them full-width; Esc closes them.</sys:String>
+                            <sys:String>Search by ticket or title (Ctrl+F), filter by state, or tick “Active only”. Done tasks are hidden until you include them in the States filter.</sys:String>
+                            <sys:String>Delete removes a task immediately. Press Undo in the bar at the bottom within a few seconds to bring it back.</sys:String>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 4. Staying focused -->
+                <Border Style="{StaticResource Card}" Padding="22,18" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource H2Icon}" Text="&#xE7C1;"/>
+                            <TextBlock Style="{StaticResource H2}" Text="Staying focused"/>
+                        </StackPanel>
+                        <ItemsControl Style="{StaticResource Bullets}">
+                            <sys:String>Click the ☆ star to focus on a task. Active tasks get a filled ★ and a tinted card, are always In progress, and appear on the widget.</sys:String>
+                            <sys:String>You can have up to 2 active tasks by default. Change this in Settings → Active tasks at a time.</sys:String>
+                            <sys:String>If nothing is active, the highest-priority unfinished task is activated for you, so there is always a next thing to do.</sys:String>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 5. The widget -->
+                <Border Style="{StaticResource Card}" Padding="22,18" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource H2Icon}" Text="&#xE7F4;"/>
+                            <TextBlock Style="{StaticResource H2}" Text="The desktop widget"/>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Lead}" Text="Minimize the app (—) to see your active tasks in the widget. It never takes keyboard focus, so you can keep typing in other apps. Choose its style in Settings → Desktop Widget → Widget style:"/>
+                        <ItemsControl Style="{StaticResource Bullets}">
+                            <sys:String>Floating — a small always-on-top card. Drag it anywhere and resize it from the bottom-right corner.</sys:String>
+                            <sys:String>Edge-docked — drag it to a screen edge. It hides as a thin tab showing the ticket number and slides out when you hover over it.</sys:String>
+                            <sys:String>Taskbar strip (experimental) — shows “#ticket · current step” (or the task name) on the taskbar next to the clock. Hover for ✓ and ‹ ›, scroll to switch tasks, and click it for the full widget. It hides during fullscreen apps and while the taskbar is auto-hidden.</sys:String>
+                            <sys:String>Widget controls — ‹ › switch between tasks and steps, the checkbox ticks the current step, ✓ marks the task done, ↻ resets to the top-priority task, → skips to the next task, and the #ticket badge opens the task.</sys:String>
+                            <sys:String>Lost the widget? Right-click the tray icon and choose Reset Widget Position.</sys:String>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 6. Keyboard shortcuts -->
+                <Border Style="{StaticResource Card}" Padding="22,18" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource H2Icon}" Text="&#xE765;"/>
+                            <TextBlock Style="{StaticResource H2}" Text="Keyboard shortcuts"/>
+                        </StackPanel>
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Style="{StaticResource KeyCap}"><TextBlock Style="{StaticResource KeyText}" Text="Ctrl+N"/></Border>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource KeyDesc}" Text="New task"/>
+                            <Border Grid.Row="1" Style="{StaticResource KeyCap}"><TextBlock Style="{StaticResource KeyText}" Text="Ctrl+S"/></Border>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource KeyDesc}" Text="Save the open task"/>
+                            <Border Grid.Row="2" Style="{StaticResource KeyCap}"><TextBlock Style="{StaticResource KeyText}" Text="Ctrl+Enter"/></Border>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource KeyDesc}" Text="Save &amp; new (in the form) · open the full form (in Quick add)"/>
+                            <Border Grid.Row="3" Style="{StaticResource KeyCap}"><TextBlock Style="{StaticResource KeyText}" Text="Esc"/></Border>
+                            <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource KeyDesc}" Text="Close the task details"/>
+                            <Border Grid.Row="4" Style="{StaticResource KeyCap}"><TextBlock Style="{StaticResource KeyText}" Text="Ctrl+F"/></Border>
+                            <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource KeyDesc}" Text="Search"/>
+                            <Border Grid.Row="5" Style="{StaticResource KeyCap}"><TextBlock Style="{StaticResource KeyText}" Text="Del"/></Border>
+                            <TextBlock Grid.Row="5" Grid.Column="1" Style="{StaticResource KeyDesc}" Text="Delete the selected task (with Undo)"/>
+                            <Border Grid.Row="6" Style="{StaticResource KeyCap}"><TextBlock Style="{StaticResource KeyText}" Text="F1"/></Border>
+                            <TextBlock Grid.Row="6" Grid.Column="1" Style="{StaticResource KeyDesc}" Text="Open this guide"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 7. Tray -->
+                <Border Style="{StaticResource Card}" Padding="22,18" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource H2Icon}" Text="&#xE7E7;"/>
+                            <TextBlock Style="{StaticResource H2}" Text="Minimize, close and the tray"/>
+                        </StackPanel>
+                        <ItemsControl Style="{StaticResource Bullets}">
+                            <sys:String>Minimize (—) hides the manager and shows the widget.</sys:String>
+                            <sys:String>Close (✕) hides everything to the tray. The app keeps running, so reminders still work.</sys:String>
+                            <sys:String>Double-click the tray icon to reopen the manager. Right-click it for Show Manager, Reset Widget Position, or Exit to quit.</sys:String>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 8. Reminders -->
+                <Border Style="{StaticResource Card}" Padding="22,18" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource H2Icon}" Text="&#xEA8F;"/>
+                            <TextBlock Style="{StaticResource H2}" Text="Reminders and Do Not Disturb"/>
+                        </StackPanel>
+                        <ItemsControl Style="{StaticResource Bullets}">
+                            <sys:String>Tasks with a due date remind you a set number of hours beforehand (Settings → Remind me, 4 hours before by default).</sys:String>
+                            <sys:String>While Windows notifications are turned off (Do Not Disturb), reminders hide the task details and only say “Background Task Active”, so nothing sensitive appears if you are sharing your screen.</sys:String>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 9. Settings -->
+                <Border Style="{StaticResource Card}" Padding="22,18" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource H2Icon}" Text="&#xE713;"/>
+                            <TextBlock Style="{StaticResource H2}" Text="Settings and themes"/>
+                        </StackPanel>
+                        <ItemsControl Style="{StaticResource Bullets}">
+                            <sys:String>Open Settings at the bottom of the navigation pane to change the active-task limit, reminders, the app theme (Use system setting, Dark or Light), and the widget style, theme, text size and opacity. Changes apply and save immediately.</sys:String>
+                            <sys:String>The sun/moon button in the title bar switches quickly between Dark and Light. The app follows your Windows accent colour, and uses the Mica material on Windows 11.</sys:String>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 10. Data & privacy -->
+                <Border Style="{StaticResource Card}" Padding="22,18" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource H2Icon}" Text="&#xE72E;"/>
+                            <TextBlock Style="{StaticResource H2}" Text="Your data and privacy"/>
+                        </StackPanel>
+                        <ItemsControl Style="{StaticResource Bullets}">
+                            <sys:String>Everything is stored on this device in %LOCALAPPDATA%\TaskTrackerApp. Nothing is sent over the network.</sys:String>
+                            <sys:String>Every save keeps the previous version as a backup. If the task file is ever damaged, the app restores the backup, keeps the damaged copy aside and tells you what happened.</sys:String>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
-        
-        <Button Grid.Row="2" Content="Close" Width="100" Height="35" HorizontalAlignment="Right" Margin="0,20,0,0"
-                Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource TextPrimary}" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
-                Click="Close_Click"/>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderLight}" BorderThickness="0,1,0,0" Padding="32,14">
+            <Grid>
+                <TextBlock Text="Tip: press F1 anywhere in the app to open this guide." Foreground="{DynamicResource TextMuted}" FontSize="12.5" VerticalAlignment="Center"/>
+                <Button Content="Close" Style="{StaticResource AccentButton}" Padding="22,5" HorizontalAlignment="Right" IsCancel="True" IsDefault="True" Click="Close_Click"/>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

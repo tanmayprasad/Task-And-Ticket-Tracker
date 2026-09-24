@@ -1,4 +1,5 @@
 using System.Windows;
+using TaskTrackerApp.Theming;
 
 namespace TaskTrackerApp
 {
@@ -7,6 +8,7 @@ namespace TaskTrackerApp
         public DocumentationWindow()
         {
             InitializeComponent();
+            WindowEffects.Attach(this); // Mica + themed title bar on Windows 11
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)

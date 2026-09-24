@@ -6,354 +6,26 @@
         Title="Task And Ticket Tracker - Manager" Height="700" Width="1000"
         StateChanged="Window_StateChanged"
         Background="{DynamicResource WindowBackground}" Foreground="{DynamicResource TextSecondary}" WindowStartupLocation="CenterScreen"
-        FontFamily="Segoe UI Variable, Segoe UI" Icon="pack://application:,,,/app.ico">
+        FontFamily="Segoe UI Variable Text, Segoe UI" Icon="pack://application:,,,/app.ico"
+        MinWidth="720" MinHeight="480" SizeChanged="Window_SizeChanged">
     
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="32" ResizeBorderThickness="6" CornerRadius="0" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
+        <WindowChrome CaptionHeight="40" ResizeBorderThickness="6" CornerRadius="0" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
     </WindowChrome.WindowChrome>
     
     <Window.Resources>
-
-        <Style TargetType="CheckBox">
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="CheckBox">
-                        <StackPanel Orientation="Horizontal" Background="Transparent">
-                            <Border x:Name="Border" Width="18" Height="18" Background="{DynamicResource ControlBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" VerticalAlignment="Center">
-                                <TextBlock x:Name="CheckMark" Text="&#xE73E;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Foreground="{DynamicResource PrimaryColor}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
-                            </Border>
-                            <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource PrimaryColor}"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource TextHighlight}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style TargetType="ScrollBar">
-            <Setter Property="Background" Value="Transparent"/>
-            <Style.Triggers>
-                <Trigger Property="Orientation" Value="Vertical">
-                    <Setter Property="Width" Value="8"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="ScrollBar">
-                                <Grid>
-                                    <Border Background="Transparent"/>
-                                    <Track x:Name="PART_Track" IsDirectionReversed="True">
-                                        <Track.Thumb>
-                                            <Thumb>
-                                                <Thumb.Template>
-                                                    <ControlTemplate TargetType="Thumb">
-                                                        <Border Background="{DynamicResource BorderBrush}" CornerRadius="4" Margin="1"/>
-                                                    </ControlTemplate>
-                                                </Thumb.Template>
-                                            </Thumb>
-                                        </Track.Thumb>
-                                    </Track>
-                                </Grid>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Trigger>
-                <Trigger Property="Orientation" Value="Horizontal">
-                    <Setter Property="Height" Value="8"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="ScrollBar">
-                                <Grid>
-                                    <Border Background="Transparent"/>
-                                    <Track x:Name="PART_Track" IsDirectionReversed="False">
-                                        <Track.Thumb>
-                                            <Thumb>
-                                                <Thumb.Template>
-                                                    <ControlTemplate TargetType="Thumb">
-                                                        <Border Background="{DynamicResource BorderBrush}" CornerRadius="4" Margin="1"/>
-                                                    </ControlTemplate>
-                                                </Thumb.Template>
-                                            </Thumb>
-                                        </Track.Thumb>
-                                    </Track>
-                                </Grid>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- Modern Button -->
-        <Style TargetType="ButtonBase" x:Key="ModernButton">
-            <Setter Property="Background" Value="{DynamicResource ControlHover}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="15,8"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ButtonBase">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        
-        <Style TargetType="Button" BasedOn="{StaticResource ModernButton}" x:Key="DangerButton">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#EF4444"/>
-            <Setter Property="BorderBrush" Value="#EF4444"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#1AEF4444"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style TargetType="Button" BasedOn="{StaticResource ModernButton}" x:Key="PrimaryButton">
-            <Setter Property="Background" Value="{DynamicResource PrimaryBackground}"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource PrimaryHover}"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- Nav Button Style -->
-        <Style TargetType="RadioButton" x:Key="NavButton">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextHighlight}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="20,15"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="GroupName" Value="NavGroup"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="RadioButton">
-                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource ControlHover}"/>
-                                <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource ControlSelected}"/>
-                                <Setter Property="Foreground" Value="{DynamicResource PrimaryBackground}"/>
-                                <Setter Property="BorderThickness" Value="4,0,0,0"/>
-                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBackground}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- TextBoxes -->
-        <Style TargetType="TextBox">
-            <Setter Property="Background" Value="{DynamicResource ControlBackground}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="8,6"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}">
-                            <ScrollViewer x:Name="PART_ContentHost"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBackground}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- ComboBox Dark Styling -->
-        <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="{x:Type ToggleButton}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition />
-                    <ColumnDefinition Width="20" />
-                </Grid.ColumnDefinitions>
-                <Border x:Name="Border" Grid.ColumnSpan="2" CornerRadius="{DynamicResource ControlCornerRadius}" Background="{DynamicResource ControlBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" />
-                <Border Grid.Column="0" CornerRadius="{DynamicResource ControlCornerRadius}" Margin="1" Background="Transparent" />
-                <Path x:Name="Arrow" Grid.Column="1" Fill="{DynamicResource TextSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M 0 0 L 4 4 L 8 0 Z"/>
-            </Grid>
-        </ControlTemplate>
-
-        <ControlTemplate x:Key="ComboBoxTextBox" TargetType="{x:Type TextBox}">
-            <Border x:Name="PART_ContentHost" Focusable="False" Background="{TemplateBinding Background}" />
-        </ControlTemplate>
-
-        <Style TargetType="{x:Type ComboBox}">
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
-            <Setter Property="Background" Value="{DynamicResource ControlBackground}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ComboBox}">
-                        <Grid>
-                            <ToggleButton Name="ToggleButton" Template="{StaticResource ComboBoxToggleButton}" Grid.Column="2" Focusable="false" IsChecked="{Binding Path=IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press" />
-                            <ContentPresenter Name="ContentSite" IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" Margin="8,6,23,6" VerticalAlignment="Center" HorizontalAlignment="Left" />
-                            <TextBox x:Name="PART_EditableTextBox" Style="{x:Null}" Template="{StaticResource ComboBoxTextBox}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,6,23,6" Focusable="True" Background="Transparent" Visibility="Hidden" IsReadOnly="{TemplateBinding IsReadOnly}" />
-                            <Popup Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
-                                <Grid Name="DropDown" SnapsToDevicePixels="True" MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}">
-                                    <Border x:Name="DropDownBorder" Background="{DynamicResource ControlBackground}" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="0,0,4,4"/>
-                                    <ScrollViewer Margin="0,4,0,4" SnapsToDevicePixels="True">
-                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
-                                    </ScrollViewer>
-                                </Grid>
-                            </Popup>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style TargetType="{x:Type ComboBoxItem}">
-            <Setter Property="SnapsToDevicePixels" Value="true" />
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ComboBoxItem}">
-                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsHighlighted" Value="true">
-                                <Setter Property="Background" Value="{DynamicResource ControlSelected}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- DataGrid -->
-        <Style TargetType="DataGrid">
-            <Setter Property="Background" Value="{DynamicResource PanelBackground}"/>
-            <Setter Property="RowBackground" Value="{DynamicResource PanelBackground}"/>
-            <Setter Property="AlternatingRowBackground" Value="{DynamicResource ControlBackground}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
-            <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource BorderLight}"/>
-            <Setter Property="RowHeight" Value="40"/>
-            <Setter Property="HeadersVisibility" Value="Column"/>
-        </Style>
-        
-        <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="{DynamicResource WindowBackground}"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextMuted}"/>
-            <Setter Property="Padding" Value="15,10"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderLight}"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        </Style>
-        
-        <Style TargetType="DataGridRow">
-            <Setter Property="AllowDrop" Value="True"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource ControlHover}"/>
-                </Trigger>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource ControlSelected}"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style TargetType="DataGridCell">
-            <Setter Property="Padding" Value="15,0"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="DataGridCell">
-                        <Border Padding="{TemplateBinding Padding}" Background="Transparent">
-                            <ContentPresenter VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <!-- Control styles live in Themes/Controls.xaml (shared by every window); only converters are local. -->
         <local:LessThanConverter x:Key="LessThanConverter"/>
-        <Style x:Key="ToggleSwitchStyle" TargetType="{x:Type CheckBox}">
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type CheckBox}">
-                        <StackPanel Orientation="Horizontal" Background="Transparent" Cursor="Hand">
-                            <Border x:Name="Border" Width="40" Height="20" Background="{DynamicResource ControlBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" VerticalAlignment="Center">
-                                <Ellipse x:Name="Knob" Width="14" Height="14" Fill="{DynamicResource TextMuted}" HorizontalAlignment="Left" Margin="2,0,2,0">
-                                    <Ellipse.RenderTransform>
-                                        <TranslateTransform X="0" />
-                                    </Ellipse.RenderTransform>
-                                </Ellipse>
-                            </Border>
-                            <ContentPresenter Margin="10,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource PrimaryColor}"/>
-                                <Setter TargetName="Knob" Property="Fill" Value="#FFFFFF"/>
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="Knob" Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" To="20" Duration="0:0:0.1" />
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="Knob" Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)" To="0" Duration="0:0:0.1" />
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
+        <local:NearLimitVisibilityConverter x:Key="NearLimitVis"/>
+        <local:DueTextConverter x:Key="DueTextConverter"/>
+        <local:DueUrgencyConverter x:Key="DueUrgencyConverter"/>
+        <local:StepProgressConverter x:Key="StepProgressConverter"/>
+        <local:StringToVisibilityConverter x:Key="StringToVis"/>
     </Window.Resources>
     
-    <Border BorderBrush="{DynamicResource BorderLight}" BorderThickness="1">
-        <Grid>
+    <Grid x:Name="RootGrid">
             <Grid.RowDefinitions>
-                <RowDefinition Height="32"/>
+                <RowDefinition Height="40"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
@@ -362,93 +34,80 @@
                         IconSource="pack://application:,,,/app.ico"
                         TrayMouseDoubleClick="MyNotifyIcon_TrayMouseDoubleClick">
             <tb:TaskbarIcon.ContextMenu>
-                <ContextMenu Background="{DynamicResource ControlHover}" Foreground="{DynamicResource TextPrimary}" BorderBrush="#444" BorderThickness="1">
+                <ContextMenu>
                     <MenuItem Header="Show Manager" Click="MenuItemShow_Click"/>
-                    <MenuItem Header="Center Widget" Click="MenuItemCenterWidget_Click"/>
-                    <Separator Background="{DynamicResource BorderBrush}"/>
+                    <MenuItem Header="Reset Widget Position" Click="MenuItemCenterWidget_Click"/>
+                    <Separator/>
                     <MenuItem Header="Exit" Click="MenuItemExit_Click"/>
                 </ContextMenu>
             </tb:TaskbarIcon.ContextMenu>
         </tb:TaskbarIcon>
 
-        <!-- Custom Title Bar -->
-        <Grid Grid.Row="0" Background="{DynamicResource WindowBackground}">
-            <TextBlock Text="Task And Ticket Tracker" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="15,0,0,0" FontWeight="SemiBold" FontSize="12"/>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" WindowChrome.IsHitTestVisibleInChrome="True">
-                <Button Content="—" Width="45" Height="32" Background="Transparent" Foreground="{DynamicResource TextHighlight}" BorderThickness="0" FontSize="14" Cursor="Hand" Click="Minimize_Click"/>
-                <Button Content="✕" Width="45" Height="32" Background="Transparent" Foreground="{DynamicResource TextHighlight}" BorderThickness="0" FontSize="14" Cursor="Hand" Click="Close_Click"/>
+        <!-- Title bar (Mica shows through). Double-click maximizes; the maximize button supports Snap Layouts. -->
+        <Grid Grid.Row="0">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                <Image Source="pack://application:,,,/app.ico" Width="16" Height="16" RenderOptions.BitmapScalingMode="HighQuality"/>
+                <TextBlock Text="Task And Ticket Tracker" FontSize="12" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" WindowChrome.IsHitTestVisibleInChrome="True">
+                <!-- Left of the caption buttons. With Mica, Windows draws the native caption buttons, so this
+                     gets a right margin in code (TitleBarActions) and the custom buttons below are hidden. -->
+                <Button x:Name="ThemeToggleButton" Style="{StaticResource IconButton}" Height="32" Margin="0,4,8,0" Click="ThemeToggle_Click"
+                        ToolTip="Switch between dark and light theme" AutomationProperties.Name="Toggle theme" WindowChrome.IsHitTestVisibleInChrome="True">
+                    <TextBlock x:Name="ThemeIconTextBlock" Text="&#xE706;" FontSize="14"/>
+                </Button>
+                <StackPanel x:Name="CaptionButtonsPanel" Orientation="Horizontal">
+                <Button Content="&#xE921;" Style="{StaticResource CaptionButton}" Click="Minimize_Click" ToolTip="Minimize to the desktop widget" AutomationProperties.Name="Minimize"/>
+                <Button x:Name="MaximizeButton" Content="&#xE922;" Style="{StaticResource CaptionButton}" Click="MaximizeRestore_Click" ToolTip="Maximize" AutomationProperties.Name="Maximize"/>
+                <Button Content="&#xE8BB;" Style="{StaticResource CaptionCloseButton}" Click="Close_Click" ToolTip="Hide to tray (double-click the tray icon to reopen; Exit from its menu)" AutomationProperties.Name="Close to tray"/>
+                </StackPanel>
             </StackPanel>
         </Grid>
 
-        <!-- Main Layout with Sidebar -->
+        <!-- Navigation pane + content layer -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="SidebarColumnDef" Width="60"/>
+                <ColumnDefinition x:Name="SidebarColumnDef" Width="220"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Sidebar -->
-            <Grid x:Name="SidebarColumn" Grid.Column="0" Background="{DynamicResource WindowBackground}">
-                <Border BorderBrush="{DynamicResource BorderLight}" BorderThickness="0,0,1,0"/>
-                <StackPanel Margin="0,10,0,0">
-                    <Button Content="&#xE700;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Width="50" Height="40" HorizontalAlignment="Left" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" FontSize="16" Cursor="Hand" Click="ToggleSidebar_Click" Margin="0,0,0,10"/>
-                    <RadioButton x:Name="NavTasks" Style="{StaticResource NavButton}" IsChecked="True" Checked="Nav_Changed">
+            <!-- Navigation pane (Windows 11 NavigationView style) -->
+            <Grid x:Name="SidebarColumn" Grid.Column="0" ClipToBounds="True">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel>
+                    <Button Content="&#xE700;" Style="{StaticResource IconButton}" Width="40" Height="36" HorizontalAlignment="Left" Margin="4,0,0,4"
+                            Click="ToggleSidebar_Click" ToolTip="Expand or collapse the navigation pane" AutomationProperties.Name="Toggle sidebar"/>
+                    <RadioButton x:Name="NavTasks" Style="{StaticResource NavItem}" IsChecked="True" Checked="Nav_Changed" ToolTip="Tasks" AutomationProperties.Name="Tasks">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE7C3;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Task Manager" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton x:Name="NavAbout" Style="{StaticResource NavButton}" Checked="Nav_Changed">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE946;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="About" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#xE9D5;" FontFamily="{StaticResource IconFont}" FontSize="16" Width="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="Tasks" VerticalAlignment="Center" Margin="14,0,0,0"/>
                         </StackPanel>
                     </RadioButton>
                 </StackPanel>
-                <StackPanel VerticalAlignment="Bottom" Margin="0,0,0,20">
-                    <Button x:Name="ThemeToggleButton" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" Padding="20,15" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Cursor="Hand" Click="ThemeToggle_Click" ToolTip="Toggle Theme" Margin="0,0,0,5">
+                <StackPanel Grid.Row="2" Margin="0,0,0,8">
+                    <RadioButton x:Name="NavAbout" Style="{StaticResource NavItem}" Checked="Nav_Changed" ToolTip="About" AutomationProperties.Name="About">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock x:Name="ThemeIconTextBlock" Text="&#xE706;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Theme" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                            <TextBlock Text="&#xE946;" FontFamily="{StaticResource IconFont}" FontSize="16" Width="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="About" VerticalAlignment="Center" Margin="14,0,0,0"/>
                         </StackPanel>
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                                    <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource ControlHover}"/>
-                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
-                    <Button Background="Transparent" Foreground="{DynamicResource TextHighlight}" BorderThickness="0" Padding="20,15" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Cursor="Hand" FontWeight="SemiBold" Click="OpenSettings_Click">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="Settings" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                                <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource ControlHover}"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
+                    </RadioButton>
+                    <RadioButton x:Name="NavSettings" Style="{StaticResource NavItem}" Checked="Nav_Changed" ToolTip="Settings" AutomationProperties.Name="Settings">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE713;" FontFamily="{StaticResource IconFont}" FontSize="16" Width="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="Settings" VerticalAlignment="Center" Margin="14,0,0,0"/>
+                        </StackPanel>
+                    </RadioButton>
                 </StackPanel>
             </Grid>
 
-            <!-- Content Area -->
-            <Grid Grid.Column="1">
+            <!-- Content layer: rounded top-left corner like Windows 11 apps -->
+            <Border x:Name="ContentLayer" Grid.Column="1" Background="{DynamicResource LayerBackground}" BorderBrush="{DynamicResource CardStroke}"
+                    BorderThickness="1,1,0,0" CornerRadius="8,0,0,0">
+            <Grid>
                 <!-- Task Manager Tab -->
                 <Grid x:Name="TasksTabContent" Visibility="Visible">
                     <Grid.RowDefinitions>
@@ -462,9 +121,10 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Task List -->
-                    <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource PanelBackground}">
+                    <Border Grid.Row="0" Grid.Column="0" Background="Transparent">
                         <Grid Margin="20,10,20,20">
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
@@ -475,12 +135,43 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="ALL TASKS" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextHighlight}" VerticalAlignment="Center"/>
-                    <Button Grid.Column="1" Content="＋ NEW TASK" Style="{StaticResource PrimaryButton}" Click="NewTaskButton_Click"/>
+                    <TextBlock Grid.Column="0" Text="Tasks" Style="{StaticResource TitleText}" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Style="{StaticResource PrimaryButton}" Click="NewTaskButton_Click" ToolTip="New task (Ctrl+N)" AutomationProperties.Name="New task">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="New task" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </Grid>
                 
+                <!-- Quick add: type a title and press Enter -->
+                <Border Grid.Row="1" Margin="0,0,0,12" Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardStroke}" BorderThickness="1" CornerRadius="6">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}" FontSize="14" Foreground="{DynamicResource AccentText}" VerticalAlignment="Center" Margin="16,0,6,0"/>
+                        <TextBox x:Name="QuickAddTextBox" Grid.Column="1" Background="Transparent" BorderThickness="0" Padding="6,0" MinHeight="44" MaxLength="120"
+                                 PreviewKeyDown="QuickAddTextBox_PreviewKeyDown" AutomationProperties.Name="Quick add task"
+                                 ToolTip="Enter: add to the list · Ctrl+Enter: open the full form · Start with #123 or AB-12 to set the ticket number"/>
+                        <TextBlock Grid.Column="1" Text="Add a task  (e.g. #123 Fix login)" FontSize="14" Foreground="{DynamicResource AccentText}" IsHitTestVisible="False" VerticalAlignment="Center" Margin="9,0,8,0" TextTrimming="CharacterEllipsis">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=QuickAddTextBox}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </Border>
+
                 <!-- Filters -->
-                <Grid Grid.Row="1" Margin="0,0,0,15">
+                <Grid Grid.Row="2" Margin="0,0,0,15">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="10"/>
@@ -488,10 +179,15 @@
                         <ColumnDefinition Width="10"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox x:Name="FilterVstsTextBox" Grid.Column="0" TextChanged="Filter_Changed" Padding="5" Foreground="{DynamicResource TextPrimary}"/>
-                    <TextBlock Grid.Column="0" Text="Search Ticket/Title..." Foreground="{DynamicResource TextMuted}" IsHitTestVisible="False" VerticalAlignment="Center" Margin="10,0,0,0" x:Name="FilterPlaceholder"/>
+                    <TextBox x:Name="FilterVstsTextBox" Grid.Column="0" TextChanged="Filter_Changed" Padding="5" FontSize="13" Foreground="{DynamicResource TextPrimary}" AutomationProperties.Name="Search tasks" ToolTip="Search by ticket number or title (Ctrl+F)"/>
+                    <TextBlock Grid.Column="0" Text="Search ticket or title…" FontSize="13" Foreground="{DynamicResource TextMuted}" IsHitTestVisible="False" VerticalAlignment="Center" Margin="10,0,0,0" x:Name="FilterPlaceholder"/>
                     
-                    <ToggleButton x:Name="FilterStateToggle" Grid.Column="2" Content="States ▼" Padding="8,5" Style="{StaticResource ModernButton}" VerticalAlignment="Center"/>
+                    <ToggleButton x:Name="FilterStateToggle" Grid.Column="2" Padding="10,5" Style="{StaticResource ModernButton}" VerticalAlignment="Center" ToolTip="Filter by state" AutomationProperties.Name="Filter by state">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="States" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="8,1,0,0"/>
+                        </StackPanel>
+                    </ToggleButton>
                     <Popup IsOpen="{Binding IsChecked, ElementName=FilterStateToggle}" StaysOpen="False" PlacementTarget="{Binding ElementName=FilterStateToggle}">
                         <Border Background="{DynamicResource ControlBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="5" CornerRadius="6">
                             <StackPanel>
@@ -501,12 +197,12 @@
                                     </Border>
                                 </CheckBox>
                                 <CheckBox x:Name="FilterStateInProgress" IsChecked="True" Click="Filter_Changed" Margin="2,4">
-                                    <Border CornerRadius="12" Padding="8,4" Background="#33F59E0B" HorizontalAlignment="Left" MinWidth="80">
+                                    <Border CornerRadius="12" Padding="8,4" Background="{DynamicResource WarningBackground}" HorizontalAlignment="Left" MinWidth="80">
                                         <TextBlock Text="In progress" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource WarningColor}" HorizontalAlignment="Center"/>
                                     </Border>
                                 </CheckBox>
                                 <CheckBox x:Name="FilterStateDone" IsChecked="False" Click="Filter_Changed" Margin="2,4">
-                                    <Border CornerRadius="12" Padding="8,4" Background="#3310B981" HorizontalAlignment="Left" MinWidth="80">
+                                    <Border CornerRadius="12" Padding="8,4" Background="{DynamicResource SuccessBackground}" HorizontalAlignment="Left" MinWidth="80">
                                         <TextBlock Text="Done" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SuccessColor}" HorizontalAlignment="Center"/>
                                     </Border>
                                 </CheckBox>
@@ -514,88 +210,164 @@
                         </Border>
                     </Popup>
                     
-                    <CheckBox x:Name="FilterActiveCheckBox" Grid.Column="4" Content="Active Only" Foreground="{DynamicResource TextHighlight}" VerticalAlignment="Center" Click="Filter_Changed"/>
+                    <CheckBox x:Name="FilterActiveCheckBox" Grid.Column="4" Content="Active only" FontSize="13" Foreground="{DynamicResource TextHighlight}" VerticalAlignment="Center" Click="Filter_Changed" ToolTip="Show only the tasks you are focusing on"/>
                 </Grid>
                 
-                <DataGrid x:Name="TasksDataGrid" Grid.Row="2" AutoGenerateColumns="False" SelectionChanged="TasksDataGrid_SelectionChanged" IsReadOnly="True" 
-                          AllowDrop="True" Drop="TasksDataGrid_Drop" PreviewMouseLeftButtonDown="TasksDataGrid_PreviewMouseLeftButtonDown" MouseMove="TasksDataGrid_MouseMove"
-                          ScrollViewer.HorizontalScrollBarVisibility="Auto" VirtualizingPanel.ScrollUnit="Pixel" SizeChanged="TasksDataGrid_SizeChanged">
+                <DataGrid x:Name="TasksDataGrid" Grid.Row="3" AutoGenerateColumns="False" SelectionChanged="TasksDataGrid_SelectionChanged" IsReadOnly="True" 
+                          AllowDrop="True" Drop="TasksDataGrid_Drop" PreviewMouseLeftButtonDown="TasksDataGrid_PreviewMouseLeftButtonDown" PreviewMouseLeftButtonUp="TasksDataGrid_PreviewMouseLeftButtonUp" MouseMove="TasksDataGrid_MouseMove"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" VirtualizingPanel.ScrollUnit="Pixel" SizeChanged="TasksDataGrid_SizeChanged">
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Width="35" IsReadOnly="True" CanUserResize="False">
+                        <!-- 1. Priority rank; a drag grip appears on hover -->
+                        <DataGridTemplateColumn Width="40" IsReadOnly="True" CanUserResize="False">
+                            <DataGridTemplateColumn.CellStyle>
+                                <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                    <Setter Property="Padding" Value="0"/>
+                                </Style>
+                            </DataGridTemplateColumn.CellStyle>
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="&#x22EE;&#x22EE;" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" Cursor="SizeAll"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="TICKET" Binding="{Binding VstsNumber}" Width="70">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="HorizontalAlignment" Value="Center"/>
-                                    <Setter Property="VerticalAlignment" Value="Center"/>
-                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-                                    <Setter Property="ToolTipService.InitialShowDelay" Value="100"/>
-                                    <Setter Property="ToolTip" Value="{Binding VstsNumber}"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn x:Name="TitleColumn" Header="TITLE" Binding="{Binding Title}" Width="300">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Padding" Value="10,0,0,0"/>
-                                    <Setter Property="HorizontalAlignment" Value="Left"/>
-                                    <Setter Property="VerticalAlignment" Value="Center"/>
-                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-                                    <Setter Property="ToolTipService.InitialShowDelay" Value="100"/>
-                                    <Setter Property="ToolTip" Value="{Binding Title}"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn Header="PRIORITY" Binding="{Binding Priority}" Width="100"/>
-                        <DataGridTemplateColumn Header="STATE" Width="130">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Border x:Name="StateBadge" CornerRadius="12" Padding="8,4" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                        <TextBlock x:Name="StateText" Text="{Binding State}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                    </Border>
+                                    <Grid Background="Transparent" Cursor="SizeAll" ToolTip="Priority — drag the card to reorder">
+                                        <TextBlock x:Name="RankText" Text="{Binding Priority}" Foreground="{DynamicResource TextMuted}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="GripText" Text="&#xE76F;" FontFamily="{StaticResource IconFont}" Foreground="{DynamicResource TextSecondary}" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+                                    </Grid>
                                     <DataTemplate.Triggers>
-                                        <DataTrigger Binding="{Binding State}" Value="To Do">
-                                            <Setter TargetName="StateBadge" Property="Background" Value="{DynamicResource ControlHover}"/>
-                                            <Setter TargetName="StateText" Property="Foreground" Value="{DynamicResource TextSecondary}"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding State}" Value="In progress">
-                                            <Setter TargetName="StateBadge" Property="Background" Value="#33F59E0B"/>
-                                            <Setter TargetName="StateText" Property="Foreground" Value="{DynamicResource WarningColor}"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding State}" Value="Done">
-                                            <Setter TargetName="StateBadge" Property="Background" Value="#3310B981"/>
-                                            <Setter TargetName="StateText" Property="Foreground" Value="{DynamicResource SuccessColor}"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridCell}, Path=Column.ActualWidth, Converter={StaticResource LessThanConverter}}" Value="True">
-                                            <Setter TargetName="StateText" Property="Visibility" Value="Collapsed"/>
+                                        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
+                                            <Setter TargetName="RankText" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="GripText" Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="ACTIVE" Width="80">
+
+                        <!-- 2. Title + chips (ticket, due date, steps) -->
+                        <DataGridTemplateColumn x:Name="TitleColumn" Width="300">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <CheckBox IsChecked="{Binding IsActive, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" VerticalAlignment="Center" Click="ActiveCheckBox_Clicked" PreviewMouseLeftButtonDown="ActiveCheckBox_PreviewMouseLeftButtonDown">
-                                        <CheckBox.LayoutTransform>
-                                            <ScaleTransform ScaleX="1.2" ScaleY="1.2" />
-                                        </CheckBox.LayoutTransform>
-                                    </CheckBox>
+                                    <StackPanel VerticalAlignment="Center" Margin="0,9" ToolTip="{Binding Title}" ToolTipService.InitialShowDelay="400">
+                                        <TextBlock x:Name="TitleText" Text="{Binding Title}" Foreground="{DynamicResource TextPrimary}" FontSize="14" TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel x:Name="MetaLine" Orientation="Horizontal" Margin="0,5,0,0">
+                                            <Border Style="{StaticResource Chip}" Visibility="{Binding VstsNumber, Converter={StaticResource StringToVis}}">
+                                                <TextBlock Text="{Binding VstsNumber, StringFormat=#{0}}" FontSize="12" Foreground="{DynamicResource TextSecondary}"/>
+                                            </Border>
+                                            <Border x:Name="DueChip" Style="{StaticResource Chip}" Visibility="{Binding Text, ElementName=DueText, Converter={StaticResource StringToVis}}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock x:Name="DueIcon" Text="&#xE787;" FontFamily="{StaticResource IconFont}" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                                    <TextBlock x:Name="DueText" Text="{Binding Converter={StaticResource DueTextConverter}}" FontSize="12" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Style="{StaticResource Chip}" Visibility="{Binding Text, ElementName=StepsText, Converter={StaticResource StringToVis}}" ToolTip="Steps done">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="&#xE73A;" FontFamily="{StaticResource IconFont}" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                                    <TextBlock x:Name="StepsText" Text="{Binding Converter={StaticResource StepProgressConverter}}" FontSize="12" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Converter={StaticResource DueUrgencyConverter}}" Value="Overdue">
+                                            <Setter TargetName="DueChip" Property="Background" Value="{DynamicResource DangerBackground}"/>
+                                            <Setter TargetName="DueText" Property="Foreground" Value="{DynamicResource DangerColor}"/>
+                                            <Setter TargetName="DueIcon" Property="Foreground" Value="{DynamicResource DangerColor}"/>
+                                            <Setter TargetName="DueText" Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Converter={StaticResource DueUrgencyConverter}}" Value="Today">
+                                            <Setter TargetName="DueChip" Property="Background" Value="{DynamicResource WarningBackground}"/>
+                                            <Setter TargetName="DueText" Property="Foreground" Value="{DynamicResource WarningColor}"/>
+                                            <Setter TargetName="DueIcon" Property="Foreground" Value="{DynamicResource WarningColor}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding State}" Value="Done">
+                                            <Setter TargetName="TitleText" Property="Foreground" Value="{DynamicResource TextMuted}"/>
+                                            <Setter TargetName="TitleText" Property="TextDecorations" Value="Strikethrough"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- 3. State pill (a coloured dot when the list is narrow) -->
+                        <DataGridTemplateColumn x:Name="StateColumn" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border x:Name="StateBadge" CornerRadius="10" Padding="10,3" HorizontalAlignment="Left" VerticalAlignment="Center" ToolTip="{Binding State}">
+                                        <TextBlock x:Name="StateText" Text="{Binding State}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding State}" Value="To Do">
+                                            <Setter TargetName="StateBadge" Property="Background" Value="{DynamicResource SubtleFill}"/>
+                                            <Setter TargetName="StateText" Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding State}" Value="In progress">
+                                            <Setter TargetName="StateBadge" Property="Background" Value="{DynamicResource WarningBackground}"/>
+                                            <Setter TargetName="StateText" Property="Foreground" Value="{DynamicResource WarningColor}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding State}" Value="Done">
+                                            <Setter TargetName="StateBadge" Property="Background" Value="{DynamicResource SuccessBackground}"/>
+                                            <Setter TargetName="StateText" Property="Foreground" Value="{DynamicResource SuccessColor}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridCell}, Path=Column.ActualWidth, Converter={StaticResource LessThanConverter}, ConverterParameter=60}" Value="True">
+                                            <Setter TargetName="StateText" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="StateBadge" Property="Padding" Value="0"/>
+                                            <Setter TargetName="StateBadge" Property="Width" Value="10"/>
+                                            <Setter TargetName="StateBadge" Property="Height" Value="10"/>
+                                            <Setter TargetName="StateBadge" Property="CornerRadius" Value="5"/>
+                                        </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridCell}, Path=Column.ActualWidth, Converter={StaticResource LessThanConverter}, ConverterParameter=60}" Value="True"/>
+                                                <Condition Binding="{Binding State}" Value="In progress"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="StateBadge" Property="Background" Value="{DynamicResource WarningColor}"/>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridCell}, Path=Column.ActualWidth, Converter={StaticResource LessThanConverter}, ConverterParameter=60}" Value="True"/>
+                                                <Condition Binding="{Binding State}" Value="Done"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="StateBadge" Property="Background" Value="{DynamicResource SuccessColor}"/>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridCell}, Path=Column.ActualWidth, Converter={StaticResource LessThanConverter}, ConverterParameter=60}" Value="True"/>
+                                                <Condition Binding="{Binding State}" Value="To Do"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="StateBadge" Property="Background" Value="{DynamicResource TextMuted}"/>
+                                        </MultiDataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- 4. Active (focus) as a star -->
+                        <DataGridTemplateColumn Width="52">
+                            <DataGridTemplateColumn.CellStyle>
+                                <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                    <Setter Property="Padding" Value="4,0,12,0"/>
+                                </Style>
+                            </DataGridTemplateColumn.CellStyle>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox Style="{StaticResource StarToggle}" IsChecked="{Binding IsActive, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Click="ActiveCheckBox_Clicked" PreviewMouseLeftButtonDown="ActiveCheckBox_PreviewMouseLeftButtonDown"
+                                              ToolTip="Focus on this task (shows it on the widget)" AutomationProperties.Name="Active"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
+
+                <!-- Empty state (no tasks, or nothing matches the filters) -->
+                <StackPanel x:Name="EmptyStatePanel" Grid.Row="3" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20,90,20,0">
+                    <TextBlock Text="&#xE9D5;" FontFamily="{StaticResource IconFont}" FontSize="48" Foreground="{DynamicResource AccentText}" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                    <TextBlock x:Name="EmptyStateTitle" Text="No tasks yet" Style="{StaticResource SubtitleText}" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="EmptyStateHint" Text="Create a task to get started." Style="{StaticResource BodyText}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="300" Margin="0,8,0,18"/>
+                    <Button x:Name="EmptyStateButton" Content="Create your first task" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Center" Click="EmptyStateButton_Click"/>
+                </StackPanel>
             </Grid>
             </Border>
 
             <!-- Divider -->
-            <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Width="1" Background="{DynamicResource ControlHover}" Visibility="{Binding Visibility, ElementName=DetailsPanel}"/>
+            <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Width="1" Background="{DynamicResource DividerStroke}" Visibility="{Binding Visibility, ElementName=DetailsPanel}"/>
 
             <!-- Task Details Form -->
             <Grid x:Name="TaskDetailsGrid" Grid.Row="0" Grid.Column="2" Margin="30,10,30,20" Width="350" Visibility="{Binding Visibility, ElementName=DetailsPanel}">
@@ -611,8 +383,8 @@
                     </Grid.RowDefinitions>
                     
                     <Grid Grid.Row="0" Margin="0,0,20,25">
-                        <TextBlock Text="TASK DETAILS" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextHighlight}" VerticalAlignment="Center"/>
-                        <Button x:Name="MaximizeDetailsButton" Content="&#xE922;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" HorizontalAlignment="Right" Click="ToggleMaximize_Click" Cursor="Hand" ToolTip="Toggle Full Screen" FontSize="14" Padding="5"/>
+                        <TextBlock x:Name="DetailsHeaderText" Text="Task details" Style="{StaticResource SubtitleText}" VerticalAlignment="Center"/>
+                        <Button x:Name="MaximizeDetailsButton" Content="&#xE922;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" HorizontalAlignment="Right" Click="ToggleMaximize_Click" Cursor="Hand" ToolTip="Expand details" AutomationProperties.Name="Expand or restore details" FontSize="14" Padding="5"/>
                     </Grid>
 
                     <ScrollViewer Grid.Row="1" Padding="0,0,20,0">
@@ -623,131 +395,46 @@
                             </Grid.ColumnDefinitions>
                             
                             <StackPanel x:Name="ContentStack" Grid.Column="0" Margin="0">
-                                <StackPanel x:Name="MetadataSection1">
-                                    <TextBlock Text="Ticket Number" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                    <TextBox x:Name="VstsTextBox" Margin="0,0,0,20" MaxLength="50"/>
+                                <!-- 1. Title -->
+                                <StackPanel x:Name="TitleSection">
+                                    <Grid Margin="0,0,0,8">
+                                        <TextBlock Text="Title *" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left" x:Name="TitleLabel"/>
+                                        <TextBlock Text="{Binding ElementName=TitleTextBox, Path=Text.Length, StringFormat={}{0}/100}" Visibility="{Binding ElementName=TitleTextBox, Path=Text.Length, Converter={StaticResource NearLimitVis}, ConverterParameter=100}" Foreground="{DynamicResource TextMuted}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                                    </Grid>
+                                    <TextBox x:Name="TitleTextBox" Margin="0,0,0,5" MaxLength="100" FontSize="14" AutomationProperties.Name="Title"/>
+                                    <TextBlock x:Name="TitleErrorText" Text="Title is a mandatory field." Foreground="{DynamicResource DangerColor}" FontSize="12" Margin="0,0,0,5" Visibility="Collapsed"/>
                                 </StackPanel>
 
-                                <Grid Margin="0,0,0,8">
-                                    <TextBlock Text="Title *" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left" x:Name="TitleLabel"/>
-                                    <TextBlock Text="{Binding ElementName=TitleTextBox, Path=Text.Length, StringFormat={}{0}/100}" Foreground="{DynamicResource TextMuted}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-                                </Grid>
-                                <TextBox x:Name="TitleTextBox" Margin="0,0,0,5" MaxLength="100"/>
-                                <TextBlock x:Name="TitleErrorText" Text="Title is a mandatory field." Foreground="#EF4444" FontSize="12" Margin="0,0,0,20" Visibility="Collapsed"/>
-
-                                <StackPanel x:Name="MetadataSection2">
-                                    <Grid Margin="0,0,0,20">
+                                <!-- 2. Steps (what the widget shows) -->
+                                <StackPanel x:Name="StepsSection" Margin="0,16,0,0">
+                                    <Grid Margin="0,0,0,8">
+                                        <TextBlock Text="Steps" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left"/>
+                                        <TextBlock x:Name="StepsProgressText" Foreground="{DynamicResource TextMuted}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="15"/>
-                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0">
-                                            <TextBlock Text="State" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                            <ComboBox x:Name="StateComboBox" Padding="8">
-                                                <ComboBoxItem Tag="To Do">
-                                                    <Border CornerRadius="12" Padding="8,4" Background="{DynamicResource ControlHover}" HorizontalAlignment="Left">
-                                                        <TextBlock Text="To Do" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
-                                                    </Border>
-                                                </ComboBoxItem>
-                                                <ComboBoxItem Tag="In progress">
-                                                    <Border CornerRadius="12" Padding="8,4" Background="#33F59E0B" HorizontalAlignment="Left">
-                                                        <TextBlock Text="In progress" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource WarningColor}"/>
-                                                    </Border>
-                                                </ComboBoxItem>
-                                                <ComboBoxItem Tag="Done">
-                                                    <Border CornerRadius="12" Padding="8,4" Background="#3310B981" HorizontalAlignment="Left">
-                                                        <TextBlock Text="Done" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SuccessColor}"/>
-                                                    </Border>
-                                                </ComboBoxItem>
-                                            </ComboBox>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2">
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                <TextBlock Text="Priority" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold"/>
-                                                <TextBlock Text="&#xE946;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="5,0,0,0" ToolTip="To change the priority, you can drag the ticket in the All Tasks list view." Cursor="Help"/>
-                                            </StackPanel>
-                                            <TextBox x:Name="PriorityTextBox" IsReadOnly="True" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource TextMuted}" ToolTip="To change the priority, you can drag the ticket in the All Tasks list view."/>
-                                        </StackPanel>
+                                        <TextBox x:Name="NewStepTextBox" Grid.Column="0" Margin="0,0,8,0" KeyDown="NewStepTextBox_KeyDown" MaxLength="100" AutomationProperties.Name="New step"
+                                                 ToolTip="Press Enter to add. Paste a list to add one step per line."/>
+                                        <TextBlock Text="Add a step and press Enter" IsHitTestVisible="False" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="10,0,0,0" TextTrimming="CharacterEllipsis">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Text, ElementName=NewStepTextBox}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <Button Grid.Column="1" Style="{StaticResource ModernButton}" Click="AddNewStep_Click" Padding="10,5" ToolTip="Add step (Enter)" AutomationProperties.Name="Add step">
+                                            <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12"/>
+                                        </Button>
                                     </Grid>
-
-                                    <TextBlock Text="Target Date &amp; Time" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                    <Border BorderBrush="{DynamicResource BorderLight}" BorderThickness="1" CornerRadius="6" Margin="0,0,0,20" Background="{DynamicResource ControlBackground}">
-                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Margin="5">
-                                        <Grid Margin="5,0,5,0" Background="Transparent" Cursor="Hand" MouseLeftButtonUp="TargetDateGrid_MouseLeftButtonUp">
-                                            <StackPanel x:Name="VisualDateStack" Orientation="Horizontal" VerticalAlignment="Center" IsHitTestVisible="False">
-                                                <TextBlock Text="&#xE787;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                <TextBlock Text="{Binding SelectedDate, ElementName=TargetDatePicker, StringFormat=dd-MM-yyyy, TargetNullValue='Select Date'}" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" FontSize="14"/>
-                                            </StackPanel>
-                                            <DatePicker x:Name="TargetDatePicker" Opacity="0" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="{Binding ActualWidth, ElementName=VisualDateStack}" IsHitTestVisible="False"/>
-                                        </Grid>
-                                        
-                                        <Border Width="1" Height="20" Background="{DynamicResource BorderLight}" Margin="5,0,8,0"/>
-                                        
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,5,0">
-                                            <TextBlock Text="&#xE823;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource TextMuted}" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                            <ComboBox x:Name="HourComboBox" SelectedIndex="0" Width="55" Padding="4" HorizontalContentAlignment="Center" Background="Transparent" BorderThickness="0">
-                                                <ComboBoxItem Content="00"/><ComboBoxItem Content="01"/><ComboBoxItem Content="02"/><ComboBoxItem Content="03"/><ComboBoxItem Content="04"/><ComboBoxItem Content="05"/>
-                                                <ComboBoxItem Content="06"/><ComboBoxItem Content="07"/><ComboBoxItem Content="08"/><ComboBoxItem Content="09"/><ComboBoxItem Content="10"/><ComboBoxItem Content="11"/>
-                                                <ComboBoxItem Content="12"/><ComboBoxItem Content="13"/><ComboBoxItem Content="14"/><ComboBoxItem Content="15"/><ComboBoxItem Content="16"/><ComboBoxItem Content="17"/>
-                                                <ComboBoxItem Content="18"/><ComboBoxItem Content="19"/><ComboBoxItem Content="20"/><ComboBoxItem Content="21"/><ComboBoxItem Content="22"/><ComboBoxItem Content="23"/>
-                                            </ComboBox>
-                                            <TextBlock Text=":" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="2,0,2,0" FontWeight="Bold"/>
-                                            <ComboBox x:Name="MinuteComboBox" SelectedIndex="0" Width="55" Padding="4" HorizontalContentAlignment="Center" Background="Transparent" BorderThickness="0">
-                                                <ComboBoxItem Content="00"/><ComboBoxItem Content="01"/><ComboBoxItem Content="02"/><ComboBoxItem Content="03"/><ComboBoxItem Content="04"/>
-                                                <ComboBoxItem Content="05"/><ComboBoxItem Content="06"/><ComboBoxItem Content="07"/><ComboBoxItem Content="08"/><ComboBoxItem Content="09"/>
-                                                <ComboBoxItem Content="10"/><ComboBoxItem Content="11"/><ComboBoxItem Content="12"/><ComboBoxItem Content="13"/><ComboBoxItem Content="14"/>
-                                                <ComboBoxItem Content="15"/><ComboBoxItem Content="16"/><ComboBoxItem Content="17"/><ComboBoxItem Content="18"/><ComboBoxItem Content="19"/>
-                                                <ComboBoxItem Content="20"/><ComboBoxItem Content="21"/><ComboBoxItem Content="22"/><ComboBoxItem Content="23"/><ComboBoxItem Content="24"/>
-                                                <ComboBoxItem Content="25"/><ComboBoxItem Content="26"/><ComboBoxItem Content="27"/><ComboBoxItem Content="28"/><ComboBoxItem Content="29"/>
-                                                <ComboBoxItem Content="30"/><ComboBoxItem Content="31"/><ComboBoxItem Content="32"/><ComboBoxItem Content="33"/><ComboBoxItem Content="34"/>
-                                                <ComboBoxItem Content="35"/><ComboBoxItem Content="36"/><ComboBoxItem Content="37"/><ComboBoxItem Content="38"/><ComboBoxItem Content="39"/>
-                                                <ComboBoxItem Content="40"/><ComboBoxItem Content="41"/><ComboBoxItem Content="42"/><ComboBoxItem Content="43"/><ComboBoxItem Content="44"/>
-                                                <ComboBoxItem Content="45"/><ComboBoxItem Content="46"/><ComboBoxItem Content="47"/><ComboBoxItem Content="48"/><ComboBoxItem Content="49"/>
-                                                <ComboBoxItem Content="50"/><ComboBoxItem Content="51"/><ComboBoxItem Content="52"/><ComboBoxItem Content="53"/><ComboBoxItem Content="54"/>
-                                                <ComboBoxItem Content="55"/><ComboBoxItem Content="56"/><ComboBoxItem Content="57"/><ComboBoxItem Content="58"/><ComboBoxItem Content="59"/>
-                                            </ComboBox>
-                                        </StackPanel>
-                                    </StackPanel>
-                                </Border>
-                                </StackPanel>
-
-                                <Grid Margin="0,0,0,8">
-                                    <TextBlock Text="Description" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left"/>
-                                    <TextBlock Text="{Binding ElementName=DescriptionTextBox, Path=Text.Length, StringFormat={}{0}/2000}" Foreground="{DynamicResource TextMuted}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-                                </Grid>
-                                <TextBox x:Name="DescriptionTextBox" Margin="0,0,0,20" Height="100" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" MaxLength="2000"/>
-
-                                <Grid Margin="0,0,0,8">
-                                    <TextBlock Text="Acceptance Criteria (AC)" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left"/>
-                                    <TextBlock Text="{Binding ElementName=AcTextBox, Path=Text.Length, StringFormat={}{0}/2000}" Foreground="{DynamicResource TextMuted}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-                                </Grid>
-                                <TextBox x:Name="AcTextBox" Margin="0,0,0,25" Height="100" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" MaxLength="2000"/>
-                                
-                                <!-- Steps Section -->
-                                <TextBlock Text="Add Steps" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                <Grid Margin="0,0,0,15">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox x:Name="NewStepTextBox" Grid.Column="0" Margin="0,0,10,0" KeyDown="NewStepTextBox_KeyDown" MaxLength="100"/>
-                                    <TextBlock Text="Enter step description..." IsHitTestVisible="False" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="10,0,0,0">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Text, ElementName=NewStepTextBox}" Value="">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                    <Button Grid.Column="1" Content="Add" Style="{StaticResource PrimaryButton}" Click="AddNewStep_Click" Padding="15,5"/>
-                                </Grid>
-                                
-                                <ListView x:Name="StepsListView" Margin="0,0,0,25" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                <ListView x:Name="StepsListView" Margin="0,0,0,4" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                   AllowDrop="True" PreviewMouseLeftButtonDown="StepsListView_PreviewMouseLeftButtonDown" MouseMove="StepsListView_MouseMove" DragEnter="StepsListView_DragEnter" Drop="StepsListView_Drop">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
@@ -789,7 +476,7 @@
                                                    
                                         <CheckBox x:Name="StepCheckBox" Grid.Column="1" IsChecked="{Binding IsDone}" VerticalAlignment="Center" Margin="0,0,6,0" Click="StepCheckBox_Click"/>
                                         
-                                        <TextBox x:Name="StepTextBox" Grid.Column="2" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" MinHeight="24" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" VerticalAlignment="Center" Margin="0,0,10,0" MaxLength="100"/>
+                                        <TextBox x:Name="StepTextBox" Grid.Column="2" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" MinHeight="28" Padding="4,2" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" VerticalAlignment="Center" Margin="0,0,10,0" MaxLength="100"/>
                                                  
                                         <Button Grid.Column="3" Content="&#xE74D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" 
                                                 Style="{StaticResource DangerButton}" BorderThickness="0" Background="Transparent" 
@@ -798,9 +485,129 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
-                                <TextBlock x:Name="StepsErrorText" Text="Step text field can not be empty." Foreground="#EF4444" FontSize="12" Margin="0,5,0,0" Visibility="Collapsed"/>
+                                    <TextBlock x:Name="StepsErrorText" Text="Step text field can not be empty." Foreground="{DynamicResource DangerColor}" FontSize="12" Margin="0,5,0,0" Visibility="Collapsed"/>
+                                </StackPanel>
+
+                                <!-- 3. Planning (moves to the right column in the full-width layout) -->
+                                <StackPanel x:Name="PlanningSection" Margin="0,16,0,0">
+                                    <TextBlock Text="Ticket number" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <Grid Margin="0,0,0,18">
+                                        <TextBox x:Name="VstsTextBox" MaxLength="50" AutomationProperties.Name="Ticket number" ToolTip="Leave empty to use the automatic number"/>
+                                        <TextBlock x:Name="VstsPlaceholder" IsHitTestVisible="False" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="10,0,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Text, ElementName=VstsTextBox}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,18">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="15"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <!-- Existing tasks: State -->
+                                        <StackPanel x:Name="StatePanel" Grid.Column="0">
+                                            <TextBlock Text="State" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                            <ComboBox x:Name="StateComboBox" Padding="8">
+                                                <ComboBoxItem Tag="To Do">
+                                                    <Border CornerRadius="12" Padding="8,4" Background="{DynamicResource ControlHover}" HorizontalAlignment="Left">
+                                                        <TextBlock Text="To Do" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                                    </Border>
+                                                </ComboBoxItem>
+                                                <ComboBoxItem Tag="In progress">
+                                                    <Border CornerRadius="12" Padding="8,4" Background="{DynamicResource WarningBackground}" HorizontalAlignment="Left">
+                                                        <TextBlock Text="In progress" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource WarningColor}"/>
+                                                    </Border>
+                                                </ComboBoxItem>
+                                                <ComboBoxItem Tag="Done">
+                                                    <Border CornerRadius="12" Padding="8,4" Background="{DynamicResource SuccessBackground}" HorizontalAlignment="Left">
+                                                        <TextBlock Text="Done" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SuccessColor}"/>
+                                                    </Border>
+                                                </ComboBoxItem>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <!-- New tasks: Start now -->
+                                        <StackPanel x:Name="StartNowPanel" Grid.Column="0" Visibility="Collapsed">
+                                            <TextBlock Text="Start now" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <CheckBox x:Name="StartNowToggle" Style="{StaticResource ToggleSwitchStyle}" VerticalAlignment="Center" AutomationProperties.Name="Start now"
+                                                          ToolTip="On: the task becomes active (In progress) and shows on the widget. Off: it waits as To Do."/>
+                                                <TextBlock x:Name="StartNowHint" Text="To Do" Foreground="{DynamicResource TextSecondary}" FontSize="12" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- Existing tasks: Priority -->
+                                        <StackPanel x:Name="PriorityPanel" Grid.Column="2">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <TextBlock Text="Priority" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold"/>
+                                                <TextBlock Text="&#xE946;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="5,0,0,0" ToolTip="Drag the task in the list to change its priority." Cursor="Help"/>
+                                            </StackPanel>
+                                            <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderLight}" BorderThickness="1" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="10,8" ToolTip="Drag the task in the list to change its priority">
+                                                <TextBlock x:Name="PriorityText" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <!-- New tasks: where to put it in the list -->
+                                        <StackPanel x:Name="PositionPanel" Grid.Column="2" Visibility="Collapsed">
+                                            <TextBlock Text="Add to" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                            <Border Background="{DynamicResource ControlBackground}" BorderBrush="{DynamicResource BorderLight}" BorderThickness="1" CornerRadius="6" Padding="2" HorizontalAlignment="Left">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <RadioButton x:Name="PositionTopRadio" GroupName="NewTaskPosition" Content="Top" Style="{StaticResource SegmentRadio}" ToolTip="Highest priority (#1)" AutomationProperties.Name="Add to top of list"/>
+                                                    <RadioButton x:Name="PositionBottomRadio" GroupName="NewTaskPosition" Content="Bottom" Style="{StaticResource SegmentRadio}" IsChecked="True" ToolTip="Lowest priority" AutomationProperties.Name="Add to bottom of list"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <TextBlock Text="Due date" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <Grid Margin="0,0,0,8">
+                                        <Button x:Name="DueDateButton" Style="{StaticResource ModernButton}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="10,7" Click="DueDateButton_Click" AutomationProperties.Name="Pick due date">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="&#xE787;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                                <TextBlock x:Name="DueDateText" Text="No due date" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <!-- Invisible picker that provides the calendar popup -->
+                                        <DatePicker x:Name="TargetDatePicker" Opacity="0" IsHitTestVisible="False" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Height="1" SelectedDateChanged="TargetDatePicker_SelectedDateChanged"/>
+                                    </Grid>
+                                    <WrapPanel Margin="0,0,0,2">
+                                        <Button Content="Today" Style="{StaticResource ChipButton}" Click="DueToday_Click"/>
+                                        <Button Content="Tomorrow" Style="{StaticResource ChipButton}" Click="DueTomorrow_Click"/>
+                                        <Button Content="Next week" Style="{StaticResource ChipButton}" Click="DueNextWeek_Click" ToolTip="Monday next week"/>
+                                        <Button x:Name="DueClearChip" Content="Clear" Style="{StaticResource ChipButton}" Click="DueClear_Click" Visibility="Collapsed"/>
+                                    </WrapPanel>
+                                    <Button x:Name="AddTimeButton" Content="+ Add a time" Style="{StaticResource ModernButton}" Background="Transparent" Foreground="{DynamicResource PrimaryBackground}" HorizontalAlignment="Left" Padding="4,2" Margin="0,0,0,12" Click="AddTime_Click" Visibility="Collapsed"
+                                            ToolTip="Without a time, the task is due all day"/>
+                                    <StackPanel x:Name="TimePanel" Orientation="Horizontal" Margin="0,0,0,12" Visibility="Collapsed">
+                                        <TextBlock Text="&#xE823;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <ComboBox x:Name="TimeComboBox" Width="100" MaxDropDownHeight="260" AutomationProperties.Name="Due time"/>
+                                        <Button Content="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" Style="{StaticResource ModernButton}" Background="Transparent" Padding="8,6" Margin="4,0,0,0" Click="RemoveTime_Click" ToolTip="Remove time (due all day)" AutomationProperties.Name="Remove time"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- 4. Notes -->
+                                <StackPanel x:Name="NotesSection" Margin="0,16,0,0">
+                                    <Grid Margin="0,0,0,8">
+                                        <TextBlock Text="Description" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left"/>
+                                        <TextBlock Text="{Binding ElementName=DescriptionTextBox, Path=Text.Length, StringFormat={}{0}/2000}" Visibility="{Binding ElementName=DescriptionTextBox, Path=Text.Length, Converter={StaticResource NearLimitVis}, ConverterParameter=2000}" Foreground="{DynamicResource TextMuted}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                                    </Grid>
+                                    <TextBox x:Name="DescriptionTextBox" Margin="0,0,0,18" MinHeight="60" MaxHeight="300" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" MaxLength="2000" AutomationProperties.Name="Description"/>
+
+                                    <Grid Margin="0,0,0,8">
+                                        <TextBlock Text="Acceptance criteria (AC)" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left"/>
+                                        <TextBlock Text="{Binding ElementName=AcTextBox, Path=Text.Length, StringFormat={}{0}/2000}" Visibility="{Binding ElementName=AcTextBox, Path=Text.Length, Converter={StaticResource NearLimitVis}, ConverterParameter=2000}" Foreground="{DynamicResource TextMuted}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                                    </Grid>
+                                    <TextBox x:Name="AcTextBox" Margin="0,0,0,18" MinHeight="60" MaxHeight="300" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" MaxLength="2000" AutomationProperties.Name="Acceptance criteria"/>
+                                </StackPanel>
                             </StackPanel>
-                            
+
                             <StackPanel x:Name="RightColumnStack" Grid.Column="1" Margin="30,0,0,0" Visibility="Collapsed"/>
                         </Grid>
                     </ScrollViewer>
@@ -808,175 +615,311 @@
             </Grid>
 
             <!-- Pinned Bottom Buttons -->
-            <Grid x:Name="ButtonPanel" Grid.Row="1" Grid.Column="2" Margin="30,0,30,20" Visibility="Collapsed">
-                <Button Content="Delete" Style="{StaticResource DangerButton}" HorizontalAlignment="Left" Click="DeleteButton_Click"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Cancel" Style="{StaticResource ModernButton}" Margin="0,0,10,0" Click="CancelButton_Click"/>
-                    <Button Content="Save Task" Style="{StaticResource PrimaryButton}" Click="SaveButton_Click"/>
-                </StackPanel>
-            </Grid>
+            <StackPanel x:Name="ButtonPanel" Grid.Row="1" Grid.Column="2" Margin="30,0,30,20" Visibility="Collapsed">
+                <!-- Shown when leaving a form that has unsaved edits -->
+                <Border x:Name="UnsavedBar" Visibility="Collapsed" Style="{StaticResource InfoBarWarning}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,2,0,8">
+                            <TextBlock Text="&#xE7BA;" FontFamily="{StaticResource IconFont}" FontSize="16" Foreground="{DynamicResource WarningColor}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBlock Text="You have unsaved changes." Style="{StaticResource BodyStrongText}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Keep editing" Style="{StaticResource SubtleButton}" Margin="0,0,8,0" Click="UnsavedKeepEditing_Click"/>
+                            <Button Content="Discard" Style="{StaticResource DangerButton}" Margin="0,0,8,0" Click="UnsavedDiscard_Click"/>
+                            <Button Content="Save" Style="{StaticResource PrimaryButton}" Click="UnsavedSave_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Grid>
+                    <Button x:Name="DeleteTaskButton" Content="Delete" Style="{StaticResource DangerButton}" HorizontalAlignment="Left" Click="DeleteButton_Click" ToolTip="Delete task (Del) — you can undo"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Cancel" Style="{StaticResource ModernButton}" Margin="0,0,8,0" Click="CancelButton_Click" ToolTip="Close without saving (Esc)"/>
+                        <Button x:Name="SaveAndNewButton" Content="Save &amp; new" Style="{StaticResource ModernButton}" Margin="0,0,8,0" Click="SaveAndNew_Click" ToolTip="Save and start another task (Ctrl+Enter)"/>
+                        <Button Content="Save task" Style="{StaticResource PrimaryButton}" Click="SaveButton_Click" ToolTip="Save (Ctrl+S)"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
         </Grid> <!-- Close TasksTabContent -->
                 <Grid x:Name="AboutTabContent" Visibility="Collapsed" Margin="40">
                     <StackPanel>
-                        <TextBlock Text="About Task And Ticket Tracker" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,20"/>
+                        <TextBlock Text="About" Style="{StaticResource TitleText}" Margin="0,0,0,20"/>
                         <TextBlock Text="Task And Ticket Tracker is a lightweight, context-aware productivity tool designed to help you stay focused on what matters." Foreground="{DynamicResource TextHighlight}" TextWrapping="Wrap" Margin="0,0,0,10" FontSize="14"/>
-                        <TextBlock Text="Version: 1.4.3.0" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,20"/>
+                        <TextBlock Text="Version: 1.4.3.7" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,20"/>
                         
-                        <TextBlock Text="Features:" FontWeight="Bold" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,10"/>
-                        <TextBlock Text="• Drag-and-drop prioritization" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,5"/>
-                        <TextBlock Text="• Strict Active Task rules to enforce focus" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,5"/>
-                        <TextBlock Text="• Desktop widget for active tasks" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,5"/>
-                        <TextBlock Text="• Background tray running and smart notifications" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,20"/>
+                        <TextBlock Text="What it does" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,10"/>
+                        <TextBlock Text="• Capture tasks in seconds with Quick add, steps and due-date shortcuts" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,6" TextWrapping="Wrap"/>
+                        <TextBlock Text="• Focus on one or two active tasks at a time, in priority order" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,6" TextWrapping="Wrap"/>
+                        <TextBlock Text="• Keep your current step in view with a floating, edge-docked or taskbar widget" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,6" TextWrapping="Wrap"/>
+                        <TextBlock Text="• Due-date reminders that hide task details during Do Not Disturb" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,6" TextWrapping="Wrap"/>
+                        <TextBlock Text="• Everything stays on this device, with automatic backups" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,20" TextWrapping="Wrap"/>
+
+                        <Button Width="200" Height="36" HorizontalAlignment="Left" Margin="0,0,0,20" Style="{StaticResource PrimaryButton}" Click="ViewDocs_Click" ToolTip="Open the user guide (F1)" AutomationProperties.Name="Open user guide">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE897;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="Open user guide" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                         
-                        <Button Content="View Documentation" Width="180" Height="35" HorizontalAlignment="Left" Margin="0,0,0,20"
-                                Background="{DynamicResource PrimaryBackground}" Foreground="{DynamicResource TextPrimary}"
-                                BorderThickness="0" Cursor="Hand" FontWeight="SemiBold" Click="ViewDocs_Click"/>
-                        
-                        <TextBlock Text="© 2026 Your Company. All rights reserved." Foreground="{DynamicResource TextDark}" FontSize="12" Margin="0,20,0,0"/>
+                        <TextBlock Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,10,0,0">
+                            All data stays on this device.
+                            <Hyperlink NavigateUri="https://github.com/tanmayprasad/Task-And-Ticket-Tracker/blob/main/PRIVACY.md" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource PrimaryBackground}">Privacy Policy</Hyperlink>
+                        </TextBlock>
+                        <TextBlock Text="© 2026 Tanmay Prasad. All rights reserved." Foreground="{DynamicResource TextDark}" FontSize="12" Margin="0,10,0,0"/>
                     </StackPanel>
                 </Grid>
             
-            <!-- Settings Tab Content -->
-            <Grid x:Name="SettingsTabContent" Grid.Column="1" Visibility="Collapsed" MaxWidth="1024" HorizontalAlignment="Stretch" Margin="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+            <!-- Settings Tab Content: Windows 11 Settings-style rows; every change applies instantly -->
+            <Grid x:Name="SettingsTabContent" Visibility="Collapsed">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="36,28,36,36" MaxWidth="1000">
+                    <TextBlock Text="Settings" Style="{StaticResource TitleText}" Margin="0,0,0,24"/>
 
-                <!-- Header -->
-                <StackPanel Grid.Row="0" Margin="40,40,40,30">
-                    <TextBlock Text="APPLICATION SETTINGS" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
-                    <TextBlock Text="Configure your workspace and notification preferences" Foreground="{DynamicResource TextMuted}" FontSize="14" Margin="0,5,0,0"/>
-                </StackPanel>
-
-                <!-- Scrollable Content -->
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="40,0,40,0">
-                    <!-- Two-Column Grid -->
-                    <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="20"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Left Column -->
-                    <StackPanel Grid.Column="0">
-                        <!-- General Settings Card -->
-                        <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,20">
-                            <StackPanel>
-                                <TextBlock Text="General" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,10"/>
-                                <Border BorderBrush="{DynamicResource BorderLight}" BorderThickness="0,0,0,1" Margin="0,0,0,20"/>
-
-                                <StackPanel Margin="0,0,0,20">
-                                    <TextBlock Text="Max Active Tasks *" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Limit the number of tasks in progress" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,8"/>
-                                    <TextBox x:Name="MaxActiveTasksTextBox" Width="100" HorizontalAlignment="Left" Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource TextPrimary}" Padding="5" MaxLength="3" PreviewTextInput="NumericOnly_PreviewTextInput" Margin="0,0,0,5"/>
-                                    <TextBlock x:Name="MaxActiveTasksErrorText" Text="Must be greater than 0." Foreground="#EF4444" FontSize="12" Margin="0,0,0,0" Visibility="Collapsed"/>
-                                </StackPanel>
-
-                                <StackPanel Margin="0,0,0,20">
-                                    <TextBlock Text="App Theme" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Select your preferred color scheme" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,8"/>
-                                    <ComboBox x:Name="ThemeComboBox" Width="150" HorizontalAlignment="Left" SelectedIndex="1" SelectionChanged="ThemeComboBox_SelectionChanged">
-                                        <ComboBoxItem Content="System"/>
-                                        <ComboBoxItem Content="Dark"/>
-                                        <ComboBoxItem Content="Light"/>
-                                    </ComboBox>
-                                </StackPanel>
+                    <TextBlock Text="Focus" Style="{StaticResource BodyStrongText}" Margin="0,0,0,8"/>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE7C1;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Active tasks at a time" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock Text="How many tasks you can focus on at once. Active tasks show on the widget." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
                             </StackPanel>
-                        </Border>
-
-                        <!-- Notifications Card -->
-                        <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
-                            <StackPanel>
-                                <TextBlock Text="Notifications" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,10"/>
-                                <Border BorderBrush="{DynamicResource BorderLight}" BorderThickness="0,0,0,1" Margin="0,0,0,20"/>
-
-                                <StackPanel Margin="0,0,0,20" Orientation="Horizontal" HorizontalAlignment="Stretch">
-                                    <StackPanel Width="250">
-                                        <TextBlock Text="Enable Task Reminders" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Receive alerts before task deadlines" Foreground="{DynamicResource TextMuted}" FontSize="12"/>
-                                    </StackPanel>
-                                    <CheckBox x:Name="NotificationsToggle" Style="{StaticResource ToggleSwitchStyle}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="20,0,0,0"/>
-                                </StackPanel>
-
-                                <StackPanel x:Name="AlertTimerPanel" Margin="0,0,0,10">
-                                    <StackPanel.Style>
-                                        <Style TargetType="StackPanel">
+                            <Grid Grid.Column="2" VerticalAlignment="Center">
+                                <ComboBox x:Name="MaxActiveTasksComboBox" Width="96" SelectionChanged="MaxActiveTasksComboBox_SelectionChanged" AutomationProperties.Name="Active tasks at a time">
+                                    <ComboBoxItem Content="1" Tag="1"/><ComboBoxItem Content="2" Tag="2"/><ComboBoxItem Content="3" Tag="3"/><ComboBoxItem Content="4" Tag="4"/><ComboBoxItem Content="5" Tag="5"/>
+                                    <ComboBoxItem Content="6" Tag="6"/><ComboBoxItem Content="7" Tag="7"/><ComboBoxItem Content="8" Tag="8"/><ComboBoxItem Content="9" Tag="9"/><ComboBoxItem Content="10" Tag="10"/>
+                                </ComboBox>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <TextBlock Text="Reminders" Style="{StaticResource BodyStrongText}" Margin="0,20,0,8"/>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xEA8F;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Due-date reminders" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock Text="Get a reminder before a task is due. Task details are hidden while Do Not Disturb is on." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Grid Grid.Column="2" VerticalAlignment="Center">
+                                <CheckBox x:Name="NotificationsToggle" Style="{StaticResource ToggleSwitchStyle}" Click="NotificationsToggle_Click" AutomationProperties.Name="Due-date reminders"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE823;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Remind me" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock Text="How long before the due date the reminder appears." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Grid Grid.Column="2" VerticalAlignment="Center">
+                                <ComboBox x:Name="AlertTimerComboBox" Width="150" SelectionChanged="AlertTimerComboBox_SelectionChanged" AutomationProperties.Name="Remind me"
+                                          IsEnabled="{Binding IsChecked, ElementName=NotificationsToggle}">
+                                    <ComboBoxItem Content="At the due time" Tag="0"/>
+                                    <ComboBoxItem Content="30 minutes before" Tag="0.5"/>
+                                    <ComboBoxItem Content="1 hour before" Tag="1"/>
+                                    <ComboBoxItem Content="2 hours before" Tag="2"/>
+                                    <ComboBoxItem Content="4 hours before" Tag="4"/>
+                                    <ComboBoxItem Content="8 hours before" Tag="8"/>
+                                    <ComboBoxItem Content="12 hours before" Tag="12"/>
+                                    <ComboBoxItem Content="1 day before" Tag="24"/>
+                                    <ComboBoxItem Content="2 days before" Tag="48"/>
+                                </ComboBox>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <TextBlock Text="Appearance" Style="{StaticResource BodyStrongText}" Margin="0,20,0,8"/>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE790;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="App theme" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock Text="Use your Windows setting, or always dark or light." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Grid Grid.Column="2" VerticalAlignment="Center">
+                                <ComboBox x:Name="ThemeComboBox" Width="170" SelectionChanged="ThemeComboBox_SelectionChanged" AutomationProperties.Name="App theme">
+                                    <ComboBoxItem Content="Use system setting" Tag="System"/>
+                                    <ComboBoxItem Content="Dark" Tag="Dark"/>
+                                    <ComboBoxItem Content="Light" Tag="Light"/>
+                                </ComboBox>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE771;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Accent colour" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock Text="Follows your Windows accent colour (Settings → Personalization → Colors)." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Grid Grid.Column="2" VerticalAlignment="Center">
+                                <Border Width="28" Height="28" CornerRadius="14" Background="{DynamicResource PrimaryBackground}" BorderBrush="{DynamicResource CardStroke}" BorderThickness="1"
+                                        ToolTip="Current accent colour"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <TextBlock Text="Desktop widget" Style="{StaticResource BodyStrongText}" Margin="0,20,0,8"/>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE7F4;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Widget style" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock TextWrapping="Wrap" Margin="0,2,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionText}">
+                                            <Setter Property="Text" Value="A movable card that stays on top of other windows."/>
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsChecked, ElementName=NotificationsToggle}" Value="False">
-                                                    <Setter Property="Opacity" Value="0.4"/>
-                                                    <Setter Property="IsHitTestVisible" Value="False"/>
+                                                <DataTrigger Binding="{Binding SelectedItem.Tag, ElementName=WidgetModeComboBox}" Value="EdgeDocked">
+                                                    <Setter Property="Text" Value="Hides as a thin tab on a screen edge and slides out when you hover over it."/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding SelectedItem.Tag, ElementName=WidgetModeComboBox}" Value="TaskbarStrip">
+                                                    <Setter Property="Text" Value="Shows '#ticket · current step' on the taskbar next to the clock (experimental)."/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
-                                    </StackPanel.Style>
-                                    <TextBlock Text="Alert Timer (Hours) *" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Hours before deadline to send a reminder" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,8"/>
-                                    <TextBox x:Name="AlertTimerTextBox" Width="100" HorizontalAlignment="Left" Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource TextPrimary}" Padding="5" MaxLength="4" PreviewTextInput="NumericOnly_PreviewTextInput" Margin="0,0,0,5"/>
-                                    <TextBlock x:Name="AlertTimerErrorText" Text="Must be 0 or a positive number." Foreground="#EF4444" FontSize="12" Margin="0,0,0,0" Visibility="Collapsed"/>
-                                </StackPanel>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-                    <!-- Right Column -->
-                    <StackPanel Grid.Column="2">
-                        <!-- Desktop Widget Card -->
-                        <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
-                            <StackPanel>
-                                <TextBlock Text="Desktop Widget" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,10"/>
-                                <Border BorderBrush="{DynamicResource BorderLight}" BorderThickness="0,0,0,1" Margin="0,0,0,20"/>
-
-                                <StackPanel Margin="0,0,0,20">
-                                    <TextBlock Text="Widget Theme" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Color scheme for the floating widget" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,8"/>
-                                    <ComboBox x:Name="WidgetThemeComboBox" Width="150" HorizontalAlignment="Left" SelectedIndex="0">
-                                        <ComboBoxItem Content="Dark"/>
-                                        <ComboBoxItem Content="Light"/>
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Margin="0,0,0,20">
-                                    <TextBlock Text="Text Size *" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Font size for widget text" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,8"/>
-                                    <TextBox x:Name="WidgetTextSizeTextBox" Width="100" HorizontalAlignment="Left" Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource TextPrimary}" Padding="5" MaxLength="3" PreviewTextInput="NumericOnly_PreviewTextInput" Margin="0,0,0,5"/>
-                                    <TextBlock x:Name="WidgetTextSizeErrorText" Text="Must be between 8 and 72." Foreground="#EF4444" FontSize="12" Margin="0,0,0,0" Visibility="Collapsed"/>
-                                </StackPanel>
-
-                                <StackPanel Margin="0,0,0,20" Orientation="Horizontal" HorizontalAlignment="Stretch">
-                                    <StackPanel Width="250">
-                                        <TextBlock Text="Bold Text" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Use bold weight for widget fonts" Foreground="{DynamicResource TextMuted}" FontSize="12"/>
-                                    </StackPanel>
-                                    <CheckBox x:Name="WidgetTextBoldToggle" Style="{StaticResource ToggleSwitchStyle}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="20,0,0,0"/>
-                                </StackPanel>
-
-                                <StackPanel Margin="0,0,0,10">
-                                    <TextBlock Text="Widget Opacity" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Adjust transparency of the widget" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,0,0,8"/>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Slider x:Name="WidgetOpacitySlider" Minimum="0.1" Maximum="1.0" Value="0.95" Width="200" HorizontalAlignment="Left" TickFrequency="0.05" IsSnapToTickEnabled="True"/>
-                                        <TextBlock Text="{Binding Value, ElementName=WidgetOpacitySlider, StringFormat={}{0:P0}}" Foreground="{DynamicResource TextHighlight}" FontFamily="Consolas" VerticalAlignment="Center" Margin="15,0,0,0"/>
-                                    </StackPanel>
-                                </StackPanel>
+                            <Grid Grid.Column="2" VerticalAlignment="Center">
+                                <ComboBox x:Name="WidgetModeComboBox" Width="210" SelectionChanged="WidgetModeComboBox_SelectionChanged" AutomationProperties.Name="Widget style">
+                                    <ComboBoxItem Content="Floating" Tag="Floating"/>
+                                    <ComboBoxItem Content="Edge-docked (auto-hide)" Tag="EdgeDocked"/>
+                                    <ComboBoxItem Content="Taskbar strip" Tag="TaskbarStrip"/>
+                                </ComboBox>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE706;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Widget theme" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock Text="Colours of the widget and taskbar strip." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
                             </StackPanel>
-                        </Border>
+                            <Grid Grid.Column="2" VerticalAlignment="Center">
+                                <ComboBox x:Name="WidgetThemeComboBox" Width="120" SelectionChanged="WidgetThemeComboBox_SelectionChanged" AutomationProperties.Name="Widget theme">
+                                    <ComboBoxItem Content="Dark" Tag="Dark"/>
+                                    <ComboBoxItem Content="Light" Tag="Light"/>
+                                </ComboBox>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE8D2;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Text size" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock Text="Size of the task title on the widget." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Grid Grid.Column="2" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Value, ElementName=WidgetTextSizeSlider, StringFormat={}{0:0} pt}" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Width="44" TextAlignment="Right" Margin="0,0,12,0"/>
+                                    <Slider x:Name="WidgetTextSizeSlider" Width="200" Minimum="12" Maximum="36" SmallChange="1" LargeChange="2" IsSnapToTickEnabled="True" TickFrequency="1"
+                                            ValueChanged="WidgetSlider_ValueChanged" PreviewMouseLeftButtonUp="WidgetSlider_MouseUp" AutomationProperties.Name="Widget text size"/>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE8DD;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Bold text" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock Text="Use a bold weight for the widget title." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Grid Grid.Column="2" VerticalAlignment="Center">
+                                <CheckBox x:Name="WidgetTextBoldToggle" Style="{StaticResource ToggleSwitchStyle}" Click="WidgetTextBoldToggle_Click" AutomationProperties.Name="Bold widget text"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE9A9;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Background opacity" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock Text="How see-through the widget background is." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Grid Grid.Column="2" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Value, ElementName=WidgetOpacitySlider, StringFormat={}{0:P0}}" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Width="44" TextAlignment="Right" Margin="0,0,12,0"/>
+                                    <Slider x:Name="WidgetOpacitySlider" Width="200" Minimum="0.4" Maximum="1.0" SmallChange="0.05" LargeChange="0.1" IsSnapToTickEnabled="True" TickFrequency="0.05"
+                                            ValueChanged="WidgetSlider_ValueChanged" PreviewMouseLeftButtonUp="WidgetSlider_MouseUp" AutomationProperties.Name="Widget background opacity"/>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <TextBlock Text="Changes are saved automatically." Style="{StaticResource CaptionText}" Margin="4,16,0,0"/>
                     </StackPanel>
-                </Grid>
                 </ScrollViewer>
-
-                <!-- Sticky Footer -->
-                <Border Grid.Row="2" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="40,20" Margin="0">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="Discard Changes" Style="{StaticResource ModernButton}" Background="Transparent" Foreground="{DynamicResource TextHighlight}" Margin="0,0,15,0" Click="CancelSettings_Click"/>
-                        <Button Content="Save Preferences" Style="{StaticResource PrimaryButton}" Click="SaveSettings_Click" Padding="20,10"/>
-                    </StackPanel>
-                </Border>
             </Grid>
         </Grid>
+            </Border>
         </Grid>
+
+        <!-- Notification bar (snackbar): short confirmations with an optional action such as Undo -->
+        <Border x:Name="Snackbar" Grid.Row="1" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,28"
+                Style="{StaticResource InfoBarNeutral}" MaxWidth="620">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="4" Direction="270" BlurRadius="18" Opacity="0.26"/>
+            </Border.Effect>
+            <Border.RenderTransform>
+                <TranslateTransform/>
+            </Border.RenderTransform>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE946;" FontFamily="{StaticResource IconFont}" FontSize="16" Foreground="{DynamicResource AccentText}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <TextBlock x:Name="SnackbarText" Foreground="{DynamicResource TextPrimary}" FontSize="14" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="440"/>
+                <Button x:Name="SnackbarActionButton" Style="{StaticResource StandardButton}" FontWeight="SemiBold" Margin="16,0,0,0" Visibility="Collapsed" Click="SnackbarAction_Click"/>
+                <Button Content="&#xE711;" Style="{StaticResource IconButton}" FontSize="11" Margin="4,0,0,0"
+                        Click="SnackbarClose_Click" ToolTip="Dismiss" AutomationProperties.Name="Dismiss notification"/>
+            </StackPanel>
+        </Border>
     </Grid>
-    </Border>
 </Window>

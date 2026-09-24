@@ -1,0 +1,56 @@
+<Window x:Class="TaskTrackerApp.TaskbarStripView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Task And Ticket Tracker - Taskbar" Height="40" Width="260"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ResizeMode="NoResize" ShowInTaskbar="False" ShowActivated="False"
+        WindowStartupLocation="Manual"
+        SourceInitialized="Window_SourceInitialized" MouseWheel="Window_MouseWheel">
+    <Window.Resources>
+        <Style x:Key="StripBtn" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="5,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="ToolTipService.InitialShowDelay" Value="{StaticResource HoverDelay}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#33FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border x:Name="Pill" CornerRadius="6" Background="#F2202020" BorderBrush="#3D3D3D" BorderThickness="1" Padding="10,0,4,0" Cursor="Hand"
+            MouseLeftButtonUp="Pill_MouseLeftButtonUp" MouseEnter="Pill_MouseEnter" MouseLeave="Pill_MouseLeave"
+            ToolTipService.InitialShowDelay="{StaticResource HoverDelay}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock x:Name="StripText" Grid.Column="0" Text="No active task" Foreground="White" FontSize="12.5"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+            <StackPanel x:Name="HoverButtons" Grid.Column="1" Orientation="Horizontal" Visibility="Collapsed" Margin="4,0,0,0">
+                <Button x:Name="PrevTaskButton" Content="&#xE76B;" Style="{StaticResource StripBtn}" Click="PrevTaskButton_Click" ToolTip="Previous active task"/>
+                <Button x:Name="NextTaskButton" Content="&#xE76C;" Style="{StaticResource StripBtn}" Click="NextTaskButton_Click" ToolTip="Next active task"/>
+                <Button x:Name="DoneButton" Content="&#xE73E;" Style="{StaticResource StripBtn}" Foreground="#4CAF50" Click="DoneButton_Click"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

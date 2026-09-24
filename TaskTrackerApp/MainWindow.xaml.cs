@@ -7,22 +7,40 @@ using System.Windows.Input;
 using System.Windows.Media;
 using TaskTrackerApp.Data;
 using TaskTrackerApp.Models;
+using TaskTrackerApp.Widgets;
+using TaskTrackerApp.Theming;
 
 namespace TaskTrackerApp;
 
 public partial class MainWindow : Window
 {
     private readonly TaskRepository _repository;
-    private List<TaskModel> _tasks;
+    private List<TaskModel> _tasks = new();
     private TaskModel? _currentTask;
     private System.Collections.ObjectModel.ObservableCollection<TicketStep> _editingSteps = new();
-    private WidgetView? _widgetView;
+    private IWidgetPresenter? _widget;
+    private string? _widgetMode;
+    private bool _taskbarFallbackNotified;
     private ContextAwareEngine _contextEngine;
     private NotificationService _notificationService;
     private SettingsManager _settingsManager;
 
     // For drag and drop
     private DataGridRow? _draggedRow;
+    private Point _gridDragStartPoint;
+
+    // Notification bar (snackbar)
+    private readonly System.Windows.Threading.DispatcherTimer _snackbarTimer = new();
+    private Action? _snackbarAction;
+
+    // Set when the user really wants to quit (tray → Exit); otherwise closing hides to the tray
+    private bool _isExiting;
+
+    // Task form state
+    private bool _dueHasTime;               // false = the due date is "all day"
+    private string _formSnapshot = string.Empty;
+    private Action? _afterUnsavedResolved;  // what to do once the user saves/discards pending edits
+    private bool _suppressSelectionGuard;
 
     [System.Runtime.InteropServices.DllImport("kernel32.dll")]
     [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
@@ -31,6 +49,28 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        WindowEffects.Attach(this);
+        SourceInitialized += (s, e) =>
+        {
+            if (WindowEffects.GetUsesSystemCaptionButtons(this))
+            {
+                // Windows draws native caption buttons (with Snap Layouts); hide ours and keep the
+                // theme button clear of the native button area (3 x 46 px)
+                CaptionButtonsPanel.Visibility = Visibility.Collapsed;
+                ThemeToggleButton.Margin = new Thickness(0, 4, 146, 0);
+            }
+            else
+            {
+                // Custom caption buttons (Windows 10): report the maximize button to Windows for Snap Layouts
+                System.Windows.Interop.HwndSource.FromHwnd(new System.Windows.Interop.WindowInteropHelper(this).Handle)?.AddHook(WndProc);
+            }
+        };
+        App.ThemeChanged += (s, e) =>
+        {
+            UpdateThemeIcon();
+            var settingsManager = _settingsManager; // assigned later in the constructor
+            if (_widget != null && settingsManager != null) _widget.ApplySettings(settingsManager.LoadSettings()); // accent colour on the widget
+        };
         _repository = new TaskRepository();
         
         // Setup Engines
@@ -55,6 +95,125 @@ public partial class MainWindow : Window
 
         // Hook into Loaded event to aggressively trim RAM after UI is rendered
         this.Loaded += (s, e) => TrimMemory();
+
+        _snackbarTimer.Tick += (s, e) => HideSnackbar();
+        InitializeTaskForm();
+        this.Closing += MainWindow_Closing;
+        Application.Current.SessionEnding += (s, e) => _isExiting = true; // Windows logoff/shutdown must not be blocked
+        RegisterShortcuts();
+        UpdateThemeIcon();
+
+        // Motion: the details pane slides in whenever it opens
+        TaskDetailsGrid.IsVisibleChanged += (s, e) =>
+        {
+            if (TaskDetailsGrid.IsVisible) Motion.FadeSlideIn(TaskDetailsGrid, fromX: 16);
+        };
+    }
+
+    // --- Keyboard shortcuts ---
+
+    private void RegisterShortcuts()
+    {
+        AddShortcut(Key.N, ModifierKeys.Control, () =>
+        {
+            ShowTasksTab();
+            NewTaskButton_Click(this, new RoutedEventArgs());
+        });
+        AddShortcut(Key.Enter, ModifierKeys.Control, () => SaveAndNew_Click(this, new RoutedEventArgs()),
+            () => DetailsPanel.Visibility == Visibility.Visible && TasksTabContent.Visibility == Visibility.Visible);
+        AddShortcut(Key.S, ModifierKeys.Control, () => SaveButton_Click(this, new RoutedEventArgs()),
+            () => DetailsPanel.Visibility == Visibility.Visible && TasksTabContent.Visibility == Visibility.Visible);
+        AddShortcut(Key.Escape, ModifierKeys.None, () =>
+        {
+            if (UnsavedBar.Visibility == Visibility.Visible) HideUnsavedBar(); // Esc = keep editing
+            else CancelButton_Click(this, new RoutedEventArgs());
+        }, () => DetailsPanel.Visibility == Visibility.Visible && TasksTabContent.Visibility == Visibility.Visible);
+        AddShortcut(Key.F, ModifierKeys.Control, () =>
+        {
+            ShowTasksTab();
+            FilterVstsTextBox.Focus();
+            FilterVstsTextBox.SelectAll();
+        });
+        AddShortcut(Key.F1, ModifierKeys.None, () => ViewDocs_Click(this, new RoutedEventArgs()));
+        // Delete only acts on the selected row, never while typing in a text field
+        AddShortcut(Key.Delete, ModifierKeys.None, () => { if (TasksDataGrid.SelectedItem is TaskModel t) DeleteTask(t); },
+            () => TasksTabContent.Visibility == Visibility.Visible && TasksDataGrid.SelectedItem is TaskModel
+                  && Keyboard.FocusedElement is not TextBox);
+    }
+
+    private void AddShortcut(Key key, ModifierKeys modifiers, Action execute, Func<bool>? canExecute = null)
+    {
+        var command = new RoutedCommand();
+        CommandBindings.Add(new CommandBinding(command,
+            (s, e) => execute(),
+            (s, e) => e.CanExecute = canExecute?.Invoke() ?? true));
+        InputBindings.Add(new KeyBinding(command, key, modifiers));
+    }
+
+    private void ShowTasksTab()
+    {
+        if (NavTasks.IsChecked != true) NavTasks.IsChecked = true;
+        else Nav_Changed(this, new RoutedEventArgs());
+    }
+
+    // --- Notification bar (snackbar) ---
+
+    private void ShowSnackbar(string message, string? actionText = null, Action? action = null, int seconds = 6)
+    {
+        SnackbarText.Text = message;
+        _snackbarAction = action;
+        SnackbarActionButton.Content = actionText;
+        SnackbarActionButton.Visibility = actionText != null && action != null ? Visibility.Visible : Visibility.Collapsed;
+        bool wasHidden = Snackbar.Visibility != Visibility.Visible;
+        Snackbar.Visibility = Visibility.Visible;
+        if (wasHidden) Motion.FadeSlideIn(Snackbar, fromY: 12, milliseconds: 180, fade: true); // small surface: fade is cheap
+
+        _snackbarTimer.Stop();
+        _snackbarTimer.Interval = TimeSpan.FromSeconds(seconds);
+        _snackbarTimer.Start();
+    }
+
+    private void HideSnackbar()
+    {
+        _snackbarTimer.Stop();
+        _snackbarAction = null;
+        Snackbar.Visibility = Visibility.Collapsed;
+    }
+
+    private void SnackbarAction_Click(object sender, RoutedEventArgs e)
+    {
+        var action = _snackbarAction;
+        HideSnackbar();
+        action?.Invoke();
+    }
+
+    private void SnackbarClose_Click(object sender, RoutedEventArgs e) => HideSnackbar();
+
+    // --- Close to tray ---
+
+    /// <summary>✕ / Alt+F4: hide straight to the tray without showing the widget (minimize "—" shows the widget).</summary>
+    private void HideToTray()
+    {
+        this.Hide();
+        _widget?.Hide();
+
+        var settings = _settingsManager.LoadSettings();
+        if (!settings.CloseToTrayTipShown)
+        {
+            settings.CloseToTrayTipShown = true;
+            _settingsManager.SaveSettings(settings);
+            MyNotifyIcon.ShowNotification("Still running in the tray",
+                "Task And Ticket Tracker keeps running so reminders keep working. Double-click the tray icon to open it, or right-click it and choose Exit to quit.",
+                H.NotifyIcon.Core.NotificationIcon.Info);
+        }
+    }
+
+    private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        // Alt+F4 and the close button hide to the tray; only tray → Exit quits
+        if (_isExiting) return;
+        e.Cancel = true;
+        HideToTray();
     }
 
     private void TrimMemory()
@@ -83,7 +242,7 @@ public partial class MainWindow : Window
 
     private void Close_Click(object sender, RoutedEventArgs e)
     {
-        Application.Current.Shutdown();
+        HideToTray();
     }
 
     private void MenuItemShow_Click(object sender, RoutedEventArgs e)
@@ -93,200 +252,195 @@ public partial class MainWindow : Window
 
     private void MenuItemCenterWidget_Click(object sender, RoutedEventArgs e)
     {
-        var settings = _settingsManager.LoadSettings();
-        settings.WidgetLeft = null;
-        settings.WidgetTop = null;
-        _settingsManager.SaveSettings(settings);
-
-        if (_widgetView != null && _widgetView.IsVisible)
+        if (_widget != null)
         {
-            _widgetView.CenterWindow();
+            _widget.ResetPosition();
+        }
+        else
+        {
+            var settings = _settingsManager.LoadSettings();
+            settings.WidgetLeft = null;
+            settings.WidgetTop = null;
+            settings.DockEdge = null;
+            _settingsManager.SaveSettings(settings);
         }
     }
 
     private void MenuItemExit_Click(object sender, RoutedEventArgs e)
     {
+        _isExiting = true;
         Application.Current.Shutdown();
     }
 
     private void OpenSettings_Click(object sender, RoutedEventArgs e)
     {
+        NavSettings.IsChecked = true; // Nav_Changed shows the page and loads the values
+    }
+
+    private bool _loadingSettings;
+
+    /// <summary>Fills the Settings page from settings.json without triggering saves.</summary>
+    private void LoadSettingsIntoControls()
+    {
+        _loadingSettings = true;
+        try
+        {
+            var settings = _settingsManager.LoadSettings();
+            SelectByTag(MaxActiveTasksComboBox, Math.Clamp(settings.MaxActiveTasks, 1, 10).ToString());
+            NotificationsToggle.IsChecked = settings.NotificationsEnabled;
+            SelectAlertTime(settings.AlertTimerHours);
+            SelectByTag(ThemeComboBox, settings.Theme);
+            SelectByTag(WidgetModeComboBox, settings.WidgetMode);
+            SelectByTag(WidgetThemeComboBox, settings.WidgetTheme);
+            WidgetTextSizeSlider.Value = Math.Clamp(settings.WidgetTextSize, 12, 36);
+            WidgetTextBoldToggle.IsChecked = settings.WidgetTextBold;
+            WidgetOpacitySlider.Value = Math.Clamp(settings.WidgetOpacity, 0.4, 1.0);
+        }
+        finally
+        {
+            _loadingSettings = false;
+        }
+    }
+
+    private static void SelectByTag(ComboBox comboBox, string? tag)
+    {
+        var item = comboBox.Items.OfType<ComboBoxItem>().FirstOrDefault(i => i.Tag?.ToString() == tag);
+        comboBox.SelectedItem = item ?? comboBox.Items.OfType<ComboBoxItem>().FirstOrDefault();
+    }
+
+    private void SelectAlertTime(double hours)
+    {
+        var tag = hours.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var item = AlertTimerComboBox.Items.OfType<ComboBoxItem>().FirstOrDefault(i => i.Tag?.ToString() == tag);
+        if (item == null)
+        {
+            // Keep a custom value from an older version instead of silently changing it
+            item = new ComboBoxItem { Content = $"{hours:0.##} hours before", Tag = tag };
+            AlertTimerComboBox.Items.Add(item);
+        }
+        AlertTimerComboBox.SelectedItem = item;
+    }
+
+    /// <summary>
+    /// Instant-apply for the Settings page: load, change, save, then apply (theme / widget).
+    /// Ignored while the page is being filled in.
+    /// </summary>
+    private void UpdateSetting(Action<SettingsModel> change, bool save = true)
+    {
+        if (_loadingSettings) return;
         var settings = _settingsManager.LoadSettings();
-        NotificationsToggle.IsChecked = settings.NotificationsEnabled;
-        AlertTimerTextBox.Text = settings.AlertTimerHours.ToString();
-        MaxActiveTasksTextBox.Text = settings.MaxActiveTasks.ToString();
-        WidgetTextSizeTextBox.Text = settings.WidgetTextSize.ToString();
-        WidgetTextBoldToggle.IsChecked = settings.WidgetTextBold;
-        WidgetOpacitySlider.Value = settings.WidgetOpacity;
-        
-        switch (settings.Theme)
-        {
-            case "Light": ThemeComboBox.SelectedIndex = 2; break;
-            case "Dark": ThemeComboBox.SelectedIndex = 1; break;
-            default: ThemeComboBox.SelectedIndex = 0; break;
-        }
-
-        switch (settings.WidgetTheme)
-        {
-            case "Light": WidgetThemeComboBox.SelectedIndex = 1; break;
-            default: WidgetThemeComboBox.SelectedIndex = 0; break;
-        }
-
-        TasksTabContent.Visibility = Visibility.Collapsed;
-        AboutTabContent.Visibility = Visibility.Collapsed;
-        SettingsTabContent.Visibility = Visibility.Visible;
-        
-        // Uncheck sidebar navigation if they are toggle buttons
-        if (NavTasks != null) NavTasks.IsChecked = false;
-        if (NavAbout != null) NavAbout.IsChecked = false;
+        change(settings);
+        if (save) _settingsManager.SaveSettings(settings);
+        if (_widget != null) EnsureWidget(settings).ApplySettings(settings);
     }
 
-    private void NumericOnly_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+    private static string? TagOf(object sender) => ((sender as ComboBox)?.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+
+    private void MaxActiveTasksComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        e.Handled = new System.Text.RegularExpressions.Regex("[^0-9.]+").IsMatch(e.Text);
+        if (int.TryParse(TagOf(sender), out int max)) UpdateSetting(s => s.MaxActiveTasks = max);
     }
 
-    private void SaveSettings_Click(object sender, RoutedEventArgs e)
+    private void NotificationsToggle_Click(object sender, RoutedEventArgs e) =>
+        UpdateSetting(s => s.NotificationsEnabled = NotificationsToggle.IsChecked == true);
+
+    private void AlertTimerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        bool hasError = false;
-
-        if (!int.TryParse(MaxActiveTasksTextBox.Text, out int maxTasks) || maxTasks <= 0)
-        {
-            if (MaxActiveTasksErrorText != null) MaxActiveTasksErrorText.Visibility = Visibility.Visible;
-            hasError = true;
-        }
-        else
-        {
-            if (MaxActiveTasksErrorText != null) MaxActiveTasksErrorText.Visibility = Visibility.Collapsed;
-        }
-
-        if (!double.TryParse(AlertTimerTextBox.Text, out double hours) || hours < 0)
-        {
-            if (AlertTimerErrorText != null) AlertTimerErrorText.Visibility = Visibility.Visible;
-            hasError = true;
-        }
-        else
-        {
-            if (AlertTimerErrorText != null) AlertTimerErrorText.Visibility = Visibility.Collapsed;
-        }
-
-        if (!int.TryParse(WidgetTextSizeTextBox.Text, out int textSize) || textSize < 8 || textSize > 72)
-        {
-            if (WidgetTextSizeErrorText != null) WidgetTextSizeErrorText.Visibility = Visibility.Visible;
-            hasError = true;
-        }
-        else
-        {
-            if (WidgetTextSizeErrorText != null) WidgetTextSizeErrorText.Visibility = Visibility.Collapsed;
-        }
-
-        if (hasError) return;
-
-        var settings = _settingsManager.LoadSettings();
-        settings.NotificationsEnabled = NotificationsToggle.IsChecked ?? true;
-        settings.AlertTimerHours = hours;
-        settings.MaxActiveTasks = maxTasks;
-        settings.WidgetTextSize = textSize;
-        
-        settings.WidgetTextBold = WidgetTextBoldToggle.IsChecked ?? true;
-        settings.WidgetOpacity = WidgetOpacitySlider.Value;
-        
-        var selectedTheme = (ThemeComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
-        if (selectedTheme != null)
-            settings.Theme = selectedTheme;
-
-        var selectedWidgetTheme = (WidgetThemeComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
-        if (selectedWidgetTheme != null)
-            settings.WidgetTheme = selectedWidgetTheme;
-
-        App.ApplyTheme(settings.Theme);
-
-        _settingsManager.SaveSettings(settings);
-        
-        if (_widgetView != null)
-        {
-            _widgetView.ApplySettings(settings);
-        }
-        SettingsTabContent.Visibility = Visibility.Collapsed;
-        if (NavTasks != null) NavTasks.IsChecked = true;
-        else TasksTabContent.Visibility = Visibility.Visible;
+        if (double.TryParse(TagOf(sender), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double hours))
+            UpdateSetting(s => s.AlertTimerHours = hours);
     }
 
-    private void CancelSettings_Click(object sender, RoutedEventArgs e)
+    private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        SettingsTabContent.Visibility = Visibility.Collapsed;
-        if (NavTasks != null) NavTasks.IsChecked = true;
-        else TasksTabContent.Visibility = Visibility.Visible;
+        var theme = TagOf(sender);
+        if (theme == null || _loadingSettings) return;
+
+        App.ApplyTheme(theme);
+        // The widget follows the app theme (it can still be changed separately below)
+        var widgetTheme = App.IsDarkTheme ? "Dark" : "Light";
+        UpdateSetting(s => { s.Theme = theme; s.WidgetTheme = widgetTheme; });
+        _loadingSettings = true;
+        SelectByTag(WidgetThemeComboBox, widgetTheme);
+        _loadingSettings = false;
+    }
+
+    private void WidgetModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var mode = TagOf(sender);
+        if (mode == null) return;
+        UpdateSetting(s =>
+        {
+            if (s.WidgetMode == mode) return;
+            s.WidgetMode = mode;
+            // A newly chosen edge-docked style starts docked to the right edge instead of floating
+            if (mode == WidgetModes.EdgeDocked && s.DockEdge == null) s.DockEdge = nameof(DockEdge.Right);
+        });
+    }
+
+    private void WidgetThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var theme = TagOf(sender);
+        if (theme != null) UpdateSetting(s => s.WidgetTheme = theme);
+    }
+
+    private void WidgetTextBoldToggle_Click(object sender, RoutedEventArgs e) =>
+        UpdateSetting(s => s.WidgetTextBold = WidgetTextBoldToggle.IsChecked == true);
+
+    private void ApplyWidgetSliders(SettingsModel s)
+    {
+        s.WidgetTextSize = (int)Math.Round(WidgetTextSizeSlider.Value);
+        s.WidgetOpacity = Math.Round(WidgetOpacitySlider.Value, 2);
+    }
+
+    private void WidgetSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!IsLoaded || WidgetTextSizeSlider == null || WidgetOpacitySlider == null) return;
+        // While dragging, preview on the widget without writing to disk; save when the mouse is released
+        bool dragging = Mouse.LeftButton == MouseButtonState.Pressed;
+        UpdateSetting(ApplyWidgetSliders, save: !dragging);
+    }
+
+    private void WidgetSlider_MouseUp(object sender, MouseButtonEventArgs e) => UpdateSetting(ApplyWidgetSliders);
+
+    private void UpdateThemeIcon()
+    {
+        // Brightness icon in dark mode, moon in light mode
+        if (ThemeIconTextBlock != null) ThemeIconTextBlock.Text = App.IsDarkTheme ? "\xE706" : "\xE708";
     }
 
     private void ThemeToggle_Click(object sender, RoutedEventArgs e)
     {
         var settings = _settingsManager.LoadSettings();
-        if (settings.Theme == "Dark")
+        if (App.IsDarkTheme)
         {
             settings.Theme = "Light";
             settings.WidgetTheme = "Light";
-            if (ThemeIconTextBlock != null) ThemeIconTextBlock.Text = "\xE708"; // Sun icon
         }
         else
         {
             settings.Theme = "Dark";
             settings.WidgetTheme = "Dark";
-            if (ThemeIconTextBlock != null) ThemeIconTextBlock.Text = "\xE706"; // Moon icon
         }
         _settingsManager.SaveSettings(settings);
         App.ApplyTheme(settings.Theme);
-        if (_widgetView != null)
+        if (_widget != null)
         {
-            _widgetView.ApplySettings(settings);
+            _widget.ApplySettings(settings);
         }
 
-        // Sync ComboBoxes if Settings is open
-        if (ThemeComboBox != null)
-        {
-            switch (settings.Theme)
-            {
-                case "Light": ThemeComboBox.SelectedIndex = 2; break;
-                case "Dark": ThemeComboBox.SelectedIndex = 1; break;
-                default: ThemeComboBox.SelectedIndex = 0; break;
-            }
-        }
-        if (WidgetThemeComboBox != null)
-        {
-            switch (settings.WidgetTheme)
-            {
-                case "Light": WidgetThemeComboBox.SelectedIndex = 1; break;
-                default: WidgetThemeComboBox.SelectedIndex = 0; break;
-            }
-        }
-    }
-
-    private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (WidgetThemeComboBox != null && ThemeComboBox.SelectedItem is ComboBoxItem item)
-        {
-            var selectedTheme = item.Content.ToString();
-            // Match widget theme unless user changes it later (which they can by using WidgetThemeComboBox directly)
-            if (selectedTheme == "Dark")
-            {
-                WidgetThemeComboBox.SelectedIndex = 0; // Dark
-            }
-            else if (selectedTheme == "Light")
-            {
-                WidgetThemeComboBox.SelectedIndex = 1; // Light
-            }
-            else if (selectedTheme == "System")
-            {
-                // We'll leave the widget theme alone or default to dark
-                WidgetThemeComboBox.SelectedIndex = 0; // Dark
-            }
-        }
+        // Keep the Settings page in sync
+        if (NavSettings.IsChecked == true) LoadSettingsIntoControls();
     }
 
     private void LoadTasks()
     {
         // Load and sort by priority
         _tasks = _repository.LoadTasks().OrderBy(t => t.Priority).ToList();
+
+        if (_repository.LoadWarning != null)
+        {
+            MessageBox.Show(_repository.LoadWarning, "Task Data Recovered", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
         
         // Migrate legacy "Doing" state to "In progress"
         foreach (var t in _tasks)
@@ -352,6 +506,46 @@ public partial class MainWindow : Window
             }
         }
         TasksDataGrid.SelectionChanged += TasksDataGrid_SelectionChanged;
+
+        UpdateEmptyState(filteredList.Count);
+    }
+
+    private void UpdateEmptyState(int visibleCount)
+    {
+        if (EmptyStatePanel == null) return;
+        EmptyStatePanel.Visibility = visibleCount == 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (visibleCount > 0) return;
+
+        if (_tasks.Count == 0)
+        {
+            EmptyStateTitle.Text = "No tasks yet";
+            EmptyStateHint.Text = "Create a task, break it into steps, and mark it active to see it on the widget.";
+            EmptyStateButton.Content = "Create your first task";
+        }
+        else
+        {
+            EmptyStateTitle.Text = "No tasks match your filters";
+            EmptyStateHint.Text = "Done tasks are hidden by default.";
+            EmptyStateButton.Content = "Show all tasks";
+        }
+    }
+
+    private void EmptyStateButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_tasks.Count == 0)
+        {
+            NewTaskButton_Click(sender, e);
+            TitleTextBox.Focus();
+            return;
+        }
+
+        // Clear every filter so all tasks, including Done ones, are visible
+        FilterVstsTextBox.Text = string.Empty;
+        FilterStateToDo.IsChecked = true;
+        FilterStateInProgress.IsChecked = true;
+        FilterStateDone.IsChecked = true;
+        FilterActiveCheckBox.IsChecked = false;
+        RefreshGrid();
     }
 
     private bool _isDetailsMaximized = false;
@@ -377,21 +571,23 @@ public partial class MainWindow : Window
             TaskDetailsGrid.Margin = new Thickness(50, 10, 50, 20);
 
             MaximizeDetailsButton.Content = "\xE73F";
-            MaximizeDetailsButton.ToolTip = "Restore Panel";
+            MaximizeDetailsButton.ToolTip = "Restore details";
 
-            DescriptionTextBox.MinHeight = 150;
-            DescriptionTextBox.Height = double.NaN;
-            AcTextBox.MinHeight = 150;
-            AcTextBox.Height = double.NaN;
+            DescriptionTextBox.MinHeight = 120;
+            DescriptionTextBox.MaxHeight = 420;
+            AcTextBox.MinHeight = 120;
+            AcTextBox.MaxHeight = 420;
 
             // Apply Split Layout
             DetailsRightColumn.Width = new GridLength(35, GridUnitType.Star);
             DetailsFormGrid.ColumnDefinitions[0].Width = new GridLength(65, GridUnitType.Star);
             RightColumnStack.Visibility = Visibility.Visible;
-            ContentStack.Children.Remove(MetadataSection1);
-            ContentStack.Children.Remove(MetadataSection2);
-            RightColumnStack.Children.Add(MetadataSection1);
-            RightColumnStack.Children.Add(MetadataSection2);
+            if (ContentStack.Children.Contains(PlanningSection))
+            {
+                ContentStack.Children.Remove(PlanningSection);
+                RightColumnStack.Children.Add(PlanningSection);
+            }
+            PlanningSection.Margin = new Thickness(0); // top of the right column: align with the Title label
         }
         else
         {
@@ -402,40 +598,68 @@ public partial class MainWindow : Window
             TaskDetailsGrid.Margin = new Thickness(30, 10, 30, 20);
 
             MaximizeDetailsButton.Content = "\xE740";
-            MaximizeDetailsButton.ToolTip = "Toggle Full Screen";
+            MaximizeDetailsButton.ToolTip = "Expand details";
 
-            DescriptionTextBox.Height = 100;
-            DescriptionTextBox.MinHeight = 0;
-            AcTextBox.Height = 100;
-            AcTextBox.MinHeight = 0;
+            // Notes start compact and grow with their content
+            DescriptionTextBox.MinHeight = 60;
+            DescriptionTextBox.MaxHeight = 300;
+            AcTextBox.MinHeight = 60;
+            AcTextBox.MaxHeight = 300;
 
             // Restore Layout
             DetailsRightColumn.Width = new GridLength(0);
             DetailsFormGrid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
             RightColumnStack.Visibility = Visibility.Collapsed;
-            RightColumnStack.Children.Clear();
-            if (!ContentStack.Children.Contains(MetadataSection1))
+            if (RightColumnStack.Children.Contains(PlanningSection))
             {
-                ContentStack.Children.Insert(0, MetadataSection1);
-                ContentStack.Children.Insert(4, MetadataSection2);
+                RightColumnStack.Children.Remove(PlanningSection);
+                // Order: Title, Steps, Planning, Notes
+                ContentStack.Children.Insert(ContentStack.Children.IndexOf(StepsSection) + 1, PlanningSection);
             }
+            PlanningSection.Margin = new Thickness(0, 16, 0, 0);
         }
     }
 
     private void NewTaskButton_Click(object sender, RoutedEventArgs e)
     {
-        _currentTask = new TaskModel();
+        RunAfterUnsavedCheck(() => StartNewTask());
+    }
+
+    /// <summary>Opens an empty (optionally prefilled) form for a new task and puts the cursor in Title.</summary>
+    private void StartNewTask(string? title = null, string? ticket = null)
+    {
+        _currentTask = new TaskModel { Title = title ?? string.Empty, VstsNumber = ticket ?? string.Empty };
+        _suppressSelectionGuard = true;
         TasksDataGrid.SelectedItem = null;
+        _suppressSelectionGuard = false;
         PopulateForm(_currentTask);
         DetailsPanel.Visibility = Visibility.Visible;
         ButtonPanel.Visibility = Visibility.Visible;
         ApplyMaximizeState();
+
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, new Action(() =>
+        {
+            TitleTextBox.Focus();
+            TitleTextBox.CaretIndex = TitleTextBox.Text.Length;
+        }));
     }
 
     private void TasksDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (_suppressSelectionGuard) return;
+
         if (TasksDataGrid.SelectedItem is TaskModel selected)
         {
+            // Switching to another task while this form has edits: ask first, and keep the current selection
+            if (_currentTask != null && selected.Id != _currentTask.Id && IsFormDirty())
+            {
+                _suppressSelectionGuard = true;
+                TasksDataGrid.SelectedItem = _tasks.Any(t => t.Id == _currentTask.Id) ? _currentTask : null;
+                _suppressSelectionGuard = false;
+                ShowUnsavedBar(() => TasksDataGrid.SelectedItem = selected);
+                return;
+            }
+
             _currentTask = selected;
             PopulateForm(selected);
             DetailsPanel.Visibility = Visibility.Visible;
@@ -452,32 +676,21 @@ public partial class MainWindow : Window
 
     private void PopulateForm(TaskModel task)
     {
+        HideUnsavedBar();
         if (TitleErrorText != null) TitleErrorText.Visibility = Visibility.Collapsed;
         if (StepsErrorText != null) StepsErrorText.Visibility = Visibility.Collapsed;
         VstsTextBox.Text = task.VstsNumber;
         TitleTextBox.Text = task.Title;
         DescriptionTextBox.Text = task.Description;
         AcTextBox.Text = task.AcceptanceCriteria;
-        
-        if (task.TargetDate.HasValue)
-        {
-            TargetDatePicker.SelectedDate = task.TargetDate.Value.Date;
-            
-            var hourStr = task.TargetDate.Value.ToString("HH");
-            foreach (ComboBoxItem item in HourComboBox.Items)
-                if (item.Content.ToString() == hourStr) HourComboBox.SelectedItem = item;
+        NewStepTextBox.Text = string.Empty;
 
-            var minStr = task.TargetDate.Value.ToString("mm");
-            foreach (ComboBoxItem item in MinuteComboBox.Items)
-                if (item.Content.ToString() == minStr) MinuteComboBox.SelectedItem = item;
-        }
-        else
-        {
-            TargetDatePicker.SelectedDate = null;
-            HourComboBox.SelectedIndex = 0;
-            MinuteComboBox.SelectedIndex = 0;
-        }
-        
+        // Due date: a 00:00 time means "all day"
+        _dueHasTime = task.TargetDate is DateTime due && due.TimeOfDay != TimeSpan.Zero;
+        TargetDatePicker.SelectedDate = task.TargetDate?.Date;
+        SelectTime(task.TargetDate?.TimeOfDay ?? new TimeSpan(17, 0, 0));
+        UpdateDueUi();
+
         foreach (ComboBoxItem item in StateComboBox.Items)
         {
             if ((item.Tag?.ToString() ?? item.Content.ToString()) == task.State)
@@ -486,111 +699,327 @@ public partial class MainWindow : Window
                 break;
             }
         }
-        
-        PriorityTextBox.Text = task.Priority.ToString();
-        
+
+        bool isNew = !_tasks.Any(t => t.Id == task.Id);
+        DetailsHeaderText.Text = isNew ? "New task" : "Task details";
+        PriorityText.Text = $"#{task.Priority} in the list";
+        VstsPlaceholder.Text = $"Auto: {TaskInput.NextAutoTicket(_tasks)}";
+        DeleteTaskButton.Visibility = isNew ? Visibility.Collapsed : Visibility.Visible;
+        SaveAndNewButton.Visibility = isNew ? Visibility.Visible : Visibility.Collapsed;
+
+        // New tasks choose "Start now" and a position; existing tasks show State and Priority
+        StatePanel.Visibility = isNew ? Visibility.Collapsed : Visibility.Visible;
+        PriorityPanel.Visibility = isNew ? Visibility.Collapsed : Visibility.Visible;
+        StartNowPanel.Visibility = isNew ? Visibility.Visible : Visibility.Collapsed;
+        PositionPanel.Visibility = isNew ? Visibility.Visible : Visibility.Collapsed;
+        StartNowToggle.IsChecked = false;
+        PositionBottomRadio.IsChecked = true;
+
         if (task.Steps == null)
             task.Steps = new System.Collections.ObjectModel.ObservableCollection<TicketStep>();
-            
+
         _editingSteps = new System.Collections.ObjectModel.ObservableCollection<TicketStep>(
-            task.Steps.Select(s => new TicketStep { IsDone = s.IsDone, Description = s.Description })
+            task.Steps.Select(s => new TicketStep { Id = s.Id, IsDone = s.IsDone, Description = s.Description })
         );
         StepsListView.ItemsSource = _editingSteps;
+        UpdateStepsHeader();
+
+        _formSnapshot = FormSnapshot();
     }
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_currentTask == null) return;
+        if (SaveCurrentTask()) CloseDetailsPanel();
+    }
+
+    private void SaveAndNew_Click(object sender, RoutedEventArgs e)
+    {
+        var title = TitleTextBox.Text.Trim();
+        if (!SaveCurrentTask()) return;
+        StartNewTask();
+        ShowSnackbar($"Saved “{Shorten(title)}”. Add the next one.");
+    }
+
+    /// <summary>Validates and saves the form into <see cref="_currentTask"/>. Returns false when validation fails.</summary>
+    private bool SaveCurrentTask()
+    {
+        if (_currentTask == null) return false;
 
         bool hasError = false;
 
         if (string.IsNullOrWhiteSpace(TitleTextBox.Text))
         {
-            if (TitleErrorText != null) TitleErrorText.Visibility = Visibility.Visible;
+            TitleErrorText.Visibility = Visibility.Visible;
+            TitleTextBox.Focus();
             hasError = true;
         }
         else
         {
-            if (TitleErrorText != null) TitleErrorText.Visibility = Visibility.Collapsed;
-        }
-
-        if (string.IsNullOrWhiteSpace(VstsTextBox.Text))
-        {
-            int maxI = 0;
-            foreach (var t in _tasks)
-            {
-                if (!string.IsNullOrEmpty(t.VstsNumber) && t.VstsNumber.StartsWith("i", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (int.TryParse(t.VstsNumber.Substring(1), out int num))
-                    {
-                        if (num > maxI) maxI = num;
-                    }
-                }
-            }
-            VstsTextBox.Text = $"i{maxI + 1}";
+            TitleErrorText.Visibility = Visibility.Collapsed;
         }
 
         if (_editingSteps.Any(s => string.IsNullOrWhiteSpace(s.Description)))
         {
-            if (StepsErrorText != null) StepsErrorText.Visibility = Visibility.Visible;
+            StepsErrorText.Visibility = Visibility.Visible;
             hasError = true;
         }
         else
         {
-            if (StepsErrorText != null) StepsErrorText.Visibility = Visibility.Collapsed;
+            StepsErrorText.Visibility = Visibility.Collapsed;
         }
 
-        if (hasError) return;
+        if (hasError) return false;
 
-        _currentTask.VstsNumber = VstsTextBox.Text;
-        _currentTask.Title = TitleTextBox.Text;
+        bool isNew = !_tasks.Any(t => t.Id == _currentTask.Id);
+
+        _currentTask.VstsNumber = string.IsNullOrWhiteSpace(VstsTextBox.Text) ? TaskInput.NextAutoTicket(_tasks) : VstsTextBox.Text.Trim();
+        _currentTask.Title = TitleTextBox.Text.Trim();
         _currentTask.Description = DescriptionTextBox.Text;
         _currentTask.AcceptanceCriteria = AcTextBox.Text;
-        
         _currentTask.Steps = new System.Collections.ObjectModel.ObservableCollection<TicketStep>(
-            _editingSteps.Select(s => new TicketStep { IsDone = s.IsDone, Description = s.Description })
+            _editingSteps.Select(s => new TicketStep { Id = s.Id, IsDone = s.IsDone, Description = s.Description })
         );
-        
-        if (TargetDatePicker.SelectedDate.HasValue)
+        _currentTask.TargetDate = CurrentDueValue();
+
+        if (isNew)
         {
-            var date = TargetDatePicker.SelectedDate.Value.Date;
-            int hour = 0;
-            int min = 0;
-            if (HourComboBox.SelectedItem is ComboBoxItem hItem) int.TryParse(hItem.Content.ToString(), out hour);
-            if (MinuteComboBox.SelectedItem is ComboBoxItem mItem) int.TryParse(mItem.Content.ToString(), out min);
-            
-            _currentTask.TargetDate = date.AddHours(hour).AddMinutes(min);
+            // "Start now" makes the task active straight away, within the active-task limit
+            bool startNow = StartNowToggle.IsChecked == true;
+            int maxActive = _settingsManager.LoadSettings().MaxActiveTasks;
+            if (startNow && _tasks.Count(t => t.IsActive) >= maxActive)
+            {
+                startNow = false;
+                ShowSnackbar($"Saved as To Do — you already have {maxActive} active tasks.",
+                    "Change limit", () => OpenSettings_Click(this, new RoutedEventArgs()));
+            }
+            _currentTask.State = startNow ? "In progress" : "To Do";
+            _currentTask.IsActive = startNow;
+
+            if (PositionTopRadio.IsChecked == true) _tasks.Insert(0, _currentTask);
+            else _tasks.Add(_currentTask);
         }
         else
         {
-            _currentTask.TargetDate = null;
-        }
-        
-        if (StateComboBox.SelectedItem is ComboBoxItem stateItem)
-        {
-            _currentTask.State = stateItem.Tag?.ToString() ?? stateItem.Content.ToString() ?? "To Do";
-        }
-        
-        if (_currentTask.State != "In progress")
-        {
-            _currentTask.IsActive = false;
+            if (StateComboBox.SelectedItem is ComboBoxItem stateItem)
+            {
+                _currentTask.State = stateItem.Tag?.ToString() ?? stateItem.Content.ToString() ?? "To Do";
+            }
+            if (_currentTask.State != "In progress")
+            {
+                _currentTask.IsActive = false;
+            }
         }
 
-        if (!_tasks.Any(t => t.Id == _currentTask.Id))
-        {
-            // Give it the lowest priority (bottom of list) initially
-            _currentTask.Priority = _tasks.Count > 0 ? _tasks.Max(t => t.Priority) + 1 : 1;
-            _tasks.Add(_currentTask);
-        }
-
-        SaveAndRefresh();
-        CloseDetailsPanel();
+        SaveAndRefresh(); // renumbers priorities from list order
+        _formSnapshot = FormSnapshot();
+        HideUnsavedBar();
+        return true;
     }
+
+    private static string Shorten(string text, int max = 40) => text.Length > max ? text[..max] + "…" : text;
         
-    private void TargetDateGrid_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    // --- Task form: setup, due date, steps, unsaved changes ---
+
+    private void InitializeTaskForm()
     {
-        TargetDatePicker.IsDropDownOpen = true;
+        // 30-minute time slots
+        for (int minutes = 0; minutes < 24 * 60; minutes += 30)
+        {
+            var time = TimeSpan.FromMinutes(minutes);
+            TimeComboBox.Items.Add(new ComboBoxItem { Content = time.ToString(@"hh\:mm"), Tag = time });
+        }
+
+        // Pasting a multi-line list into the step box adds one step per line
+        DataObject.AddPastingHandler(NewStepTextBox, NewStepTextBox_Pasting);
+
+        StartNowToggle.Checked += (s, e) => StartNowHint.Text = "Active now";
+        StartNowToggle.Unchecked += (s, e) => StartNowHint.Text = "To Do";
+    }
+
+    private void SelectTime(TimeSpan time)
+    {
+        var match = TimeComboBox.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (TimeSpan)i.Tag == time);
+        if (match == null)
+        {
+            // Keep an existing off-slot time such as 17:45 instead of silently rounding it
+            match = new ComboBoxItem { Content = time.ToString(@"hh\:mm"), Tag = time };
+            int index = TimeComboBox.Items.OfType<ComboBoxItem>().TakeWhile(i => (TimeSpan)i.Tag < time).Count();
+            TimeComboBox.Items.Insert(index, match);
+        }
+        TimeComboBox.SelectedItem = match;
+    }
+
+    private DateTime? CurrentDueValue()
+    {
+        if (TargetDatePicker.SelectedDate is not DateTime date) return null;
+        var time = _dueHasTime && TimeComboBox.SelectedItem is ComboBoxItem { Tag: TimeSpan t } ? t : TimeSpan.Zero;
+        return date.Date + time;
+    }
+
+    private void UpdateDueUi()
+    {
+        var date = TargetDatePicker.SelectedDate;
+        DueDateText.Text = date is DateTime d
+            ? d.ToString("ddd, d MMM yyyy", System.Globalization.CultureInfo.CurrentCulture)
+            : "No due date";
+        DueClearChip.Visibility = date != null ? Visibility.Visible : Visibility.Collapsed;
+        AddTimeButton.Visibility = date != null && !_dueHasTime ? Visibility.Visible : Visibility.Collapsed;
+        TimePanel.Visibility = date != null && _dueHasTime ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void DueDateButton_Click(object sender, RoutedEventArgs e) => TargetDatePicker.IsDropDownOpen = true;
+
+    private void TargetDatePicker_SelectedDateChanged(object? sender, SelectionChangedEventArgs e) => UpdateDueUi();
+
+    private void SetDueDate(DateTime? date)
+    {
+        TargetDatePicker.SelectedDate = date;
+        if (date == null) _dueHasTime = false;
+        UpdateDueUi();
+    }
+
+    private void DueToday_Click(object sender, RoutedEventArgs e) => SetDueDate(DateTime.Today);
+    private void DueTomorrow_Click(object sender, RoutedEventArgs e) => SetDueDate(DateTime.Today.AddDays(1));
+    private void DueNextWeek_Click(object sender, RoutedEventArgs e) => SetDueDate(TaskInput.NextWeekStart(DateTime.Today));
+    private void DueClear_Click(object sender, RoutedEventArgs e) => SetDueDate(null);
+
+    private void AddTime_Click(object sender, RoutedEventArgs e)
+    {
+        _dueHasTime = true;
+        UpdateDueUi();
+        TimeComboBox.Focus();
+    }
+
+    private void RemoveTime_Click(object sender, RoutedEventArgs e)
+    {
+        _dueHasTime = false;
+        UpdateDueUi();
+    }
+
+    private void UpdateStepsHeader()
+    {
+        var progress = TaskFormat.StepProgress(_editingSteps);
+        StepsProgressText.Text = progress.Length == 0 ? string.Empty : $"{progress} done";
+    }
+
+    private void NewStepTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+    {
+        if (!e.SourceDataObject.GetDataPresent(DataFormats.UnicodeText, true)) return;
+        var text = e.SourceDataObject.GetData(DataFormats.UnicodeText) as string;
+        if (text == null || !text.Contains('\n')) return; // single line: normal paste
+
+        e.CancelCommand();
+        var lines = TaskInput.SplitStepLines(text);
+        foreach (var line in lines) _editingSteps.Add(new TicketStep { Description = line });
+        StepsListView.Items.Refresh();
+        UpdateStepsHeader();
+        if (lines.Count > 0) ShowSnackbar($"Added {lines.Count} steps from the pasted list.");
+    }
+
+    /// <summary>A string capturing every editable value of the form, used to detect unsaved edits.</summary>
+    private string FormSnapshot()
+    {
+        var steps = string.Join("|", _editingSteps.Select(s => $"{s.IsDone}:{s.Description}"));
+        var state = (StateComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+        return string.Join("\u001f", TitleTextBox.Text, VstsTextBox.Text, DescriptionTextBox.Text, AcTextBox.Text,
+            state, StartNowToggle.IsChecked, PositionTopRadio.IsChecked, CurrentDueValue(), NewStepTextBox.Text, steps);
+    }
+
+    private bool IsFormDirty() =>
+        DetailsPanel.Visibility == Visibility.Visible && _currentTask != null && FormSnapshot() != _formSnapshot;
+
+    /// <summary>Runs <paramref name="action"/> now, or after the user resolves unsaved edits in the form.</summary>
+    private void RunAfterUnsavedCheck(Action action)
+    {
+        if (IsFormDirty()) ShowUnsavedBar(action);
+        else action();
+    }
+
+    private void ShowUnsavedBar(Action afterResolved)
+    {
+        _afterUnsavedResolved = afterResolved;
+        UnsavedBar.Visibility = Visibility.Visible;
+    }
+
+    private void HideUnsavedBar()
+    {
+        _afterUnsavedResolved = null;
+        if (UnsavedBar != null) UnsavedBar.Visibility = Visibility.Collapsed;
+    }
+
+    private void UnsavedKeepEditing_Click(object sender, RoutedEventArgs e) => HideUnsavedBar();
+
+    private void UnsavedDiscard_Click(object sender, RoutedEventArgs e)
+    {
+        var next = _afterUnsavedResolved;
+        _formSnapshot = FormSnapshot(); // accept the loss
+        HideUnsavedBar();
+        next?.Invoke();
+    }
+
+    private void UnsavedSave_Click(object sender, RoutedEventArgs e)
+    {
+        var next = _afterUnsavedResolved;
+        if (!SaveCurrentTask()) return; // validation message is shown; stay in the form
+        next?.Invoke();
+    }
+
+    // --- Quick add ---
+
+    private void QuickAddTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            QuickAddTextBox.Text = string.Empty;
+            e.Handled = true;
+            return;
+        }
+        if (e.Key != Key.Enter) return;
         e.Handled = true;
+
+        var (ticket, title) = TaskInput.ParseQuickAdd(QuickAddTextBox.Text);
+        if (title.Length == 0) return;
+
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+        {
+            // Ctrl+Enter: continue in the full form (nothing is saved until Save)
+            RunAfterUnsavedCheck(() =>
+            {
+                QuickAddTextBox.Text = string.Empty;
+                StartNewTask(title, ticket);
+            });
+            return;
+        }
+
+        var task = new TaskModel
+        {
+            Title = title,
+            VstsNumber = string.IsNullOrWhiteSpace(ticket) ? TaskInput.NextAutoTicket(_tasks) : ticket
+        };
+        _tasks.Add(task);
+        SaveAndRefresh();
+        QuickAddTextBox.Text = string.Empty;
+        ShowSnackbar($"Added “{Shorten(title)}” as #{task.VstsNumber}.", "Open", () => OpenTaskDetails(task));
+    }
+
+    /// <summary>Opens a task's details even if the current filters hide it in the list.</summary>
+    private void OpenTaskDetails(TaskModel task)
+    {
+        RunAfterUnsavedCheck(() =>
+        {
+            ShowTasksTab();
+            if (TasksDataGrid.Items.Contains(task))
+            {
+                TasksDataGrid.SelectedItem = task;
+                TasksDataGrid.ScrollIntoView(task);
+                return;
+            }
+            _currentTask = task;
+            PopulateForm(task);
+            DetailsPanel.Visibility = Visibility.Visible;
+            ButtonPanel.Visibility = Visibility.Visible;
+            ApplyMaximizeState();
+        });
     }
         
     private void CloseDetailsPanel()
@@ -602,11 +1031,30 @@ public partial class MainWindow : Window
         ApplyMaximizeState();
     }
 
+    private DocumentationWindow? _userGuide;
+
     private void ViewDocs_Click(object sender, RoutedEventArgs e)
     {
-        var docWindow = new DocumentationWindow();
-        docWindow.Owner = this;
-        docWindow.ShowDialog();
+        // One guide at a time: pressing F1 again just brings the open guide to the front
+        if (_userGuide != null)
+        {
+            _userGuide.Activate();
+            return;
+        }
+
+        _userGuide = new DocumentationWindow { Owner = this };
+        _userGuide.Closed += (s, args) => _userGuide = null;
+        _userGuide.ShowDialog();
+    }
+
+    private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        }
+        catch { }
+        e.Handled = true;
     }
 
     private void ActiveCheckBox_Clicked(object sender, RoutedEventArgs e)
@@ -624,7 +1072,8 @@ public partial class MainWindow : Window
         var activeCount = _tasks.Count(t => t.IsActive);
         if (activeCount > settings.MaxActiveTasks)
         {
-            MessageBox.Show($"You can only have up to {settings.MaxActiveTasks} active tasks at a time.", "Limit Reached", MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowSnackbar($"You can have up to {settings.MaxActiveTasks} active tasks. Finish or deactivate one first.",
+                "Change limit", () => OpenSettings_Click(this, new RoutedEventArgs()));
             
             // Revert the check
             if (sender is CheckBox cbRevert && cbRevert.DataContext is TaskModel t)
@@ -652,19 +1101,40 @@ public partial class MainWindow : Window
     private void DeleteButton_Click(object sender, RoutedEventArgs e)
     {
         if (_currentTask == null) return;
-        
-        var result = MessageBox.Show($"Are you sure you want to delete '{_currentTask.Title}'?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-        if (result == MessageBoxResult.Yes)
+        var existing = _tasks.FirstOrDefault(t => t.Id == _currentTask.Id);
+        if (existing != null) DeleteTask(existing);
+    }
+
+    /// <summary>Deletes immediately and offers Undo, instead of asking for confirmation.</summary>
+    private void DeleteTask(TaskModel task)
+    {
+        int index = _tasks.IndexOf(task);
+        if (index < 0) return;
+
+        bool wasActive = task.IsActive;
+        string state = task.State;
+
+        if (_currentTask?.Id == task.Id) CloseDetailsPanel();
+        _tasks.RemoveAt(index);
+        SaveAndRefresh();
+
+        var title = task.Title.Length > 40 ? task.Title[..40] + "…" : task.Title;
+        ShowSnackbar($"Deleted “{title}”", "Undo", () =>
         {
-            _tasks.RemoveAll(t => t.Id == _currentTask.Id);
-            CloseDetailsPanel();
+            if (_tasks.Any(t => t.Id == task.Id)) return;
+
+            // Another task may have been auto-activated meanwhile; don't exceed the active limit
+            var max = _settingsManager.LoadSettings().MaxActiveTasks;
+            task.IsActive = wasActive && _tasks.Count(t => t.IsActive) < max;
+            task.State = state;
+            _tasks.Insert(Math.Min(index, _tasks.Count), task);
             SaveAndRefresh();
-        }
+        });
     }
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
-        CloseDetailsPanel();
+        RunAfterUnsavedCheck(CloseDetailsPanel);
     }
 
     private void EnforceActiveTaskRules()
@@ -711,31 +1181,88 @@ public partial class MainWindow : Window
 
         EnforceActiveTaskRules();
 
-        _repository.SaveTasks(_tasks);
+        PersistTasks();
         RefreshGrid();
         
         _notificationService?.UpdateTasks(_tasks);
         UpdateWidgetIfActive();
     }
 
+    private void PersistTasks()
+    {
+        try
+        {
+            _repository.SaveTasks(_tasks);
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show($"Your changes could not be saved to disk:\n{ex.Message}\n\nThey are kept in memory; try again before closing the app.", "Save Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void Window_StateChanged(object sender, EventArgs e)
     {
+        UpdateMaximizeState();
         if (this.WindowState == WindowState.Minimized)
         {
             this.Hide();
             
-            if (_widgetView == null)
-            {
-                _widgetView = new WidgetView(this);
-                _widgetView.OnSkipRequested += WidgetView_OnSkipRequested;
-                _widgetView.OnResetRequested += WidgetView_OnResetRequested;
-                _widgetView.OnTaskRequested += WidgetView_OnTaskRequested;
-            }
-            
-            _widgetView.ApplySettings(_settingsManager.LoadSettings());
-            _widgetView.SetActiveTasks(_tasks.Where(t => t.IsActive).ToList());
-            _widgetView.Show();
+            var settings = _settingsManager.LoadSettings();
+            var widget = EnsureWidget(settings);
+            widget.ApplySettings(settings);
+            widget.SetActiveTasks(_tasks.Where(t => t.IsActive).ToList());
+            widget.Show();
         }
+    }
+
+    /// <summary>
+    /// Returns the widget presenter for the configured style, replacing the current one when the style changed.
+    /// Falls back to the floating widget when the taskbar strip can't be used (e.g. vertical taskbar).
+    /// </summary>
+    private IWidgetPresenter EnsureWidget(SettingsModel settings)
+    {
+        var mode = settings.WidgetMode;
+        if (mode == WidgetModes.TaskbarStrip && !TaskbarStripView.IsSupported())
+        {
+            if (!_taskbarFallbackNotified)
+            {
+                _taskbarFallbackNotified = true;
+                MyNotifyIcon.ShowNotification("Taskbar strip unavailable",
+                    "The taskbar strip needs a horizontal taskbar. Showing the floating widget instead.",
+                    H.NotifyIcon.Core.NotificationIcon.Info);
+            }
+            mode = WidgetModes.Floating;
+        }
+
+        if (_widget != null && _widgetMode == mode) return _widget;
+
+        bool wasVisible = _widget?.IsVisible == true;
+        if (_widget != null)
+        {
+            _widget.OnSkipRequested -= WidgetView_OnSkipRequested;
+            _widget.OnResetRequested -= WidgetView_OnResetRequested;
+            _widget.OnTaskRequested -= WidgetView_OnTaskRequested;
+            _widget.Close();
+        }
+
+        _widget = mode switch
+        {
+            WidgetModes.TaskbarStrip => new TaskbarStripView(this),
+            WidgetModes.EdgeDocked => new WidgetView(this, WidgetRole.EdgeDocked),
+            _ => new WidgetView(this, WidgetRole.Floating),
+        };
+        _widgetMode = mode;
+        _widget.OnSkipRequested += WidgetView_OnSkipRequested;
+        _widget.OnResetRequested += WidgetView_OnResetRequested;
+        _widget.OnTaskRequested += WidgetView_OnTaskRequested;
+
+        if (wasVisible)
+        {
+            _widget.ApplySettings(settings);
+            _widget.SetActiveTasks(_tasks.Where(t => t.IsActive).ToList());
+            _widget.Show();
+        }
+        return _widget;
     }
 
     private void WidgetView_OnSkipRequested(object? sender, TaskModel currentTask)
@@ -767,12 +1294,12 @@ public partial class MainWindow : Window
             nextTask.State = "In progress";
         }
         
-        _repository.SaveTasks(_tasks);
+        PersistTasks();
         TasksDataGrid.Items.Refresh();
         
-        if (_widgetView != null)
+        if (_widget != null)
         {
-            _widgetView.SetActiveTasks(_tasks.Where(t => t.IsActive).ToList());
+            _widget.SetActiveTasks(_tasks.Where(t => t.IsActive).ToList());
         }
     }
 
@@ -798,12 +1325,12 @@ public partial class MainWindow : Window
             highestTask.IsActive = true;
         }
         
-        _repository.SaveTasks(_tasks);
+        PersistTasks();
         TasksDataGrid.Items.Refresh();
         
-        if (_widgetView != null)
+        if (_widget != null)
         {
-            _widgetView.SetActiveTasks(_tasks.Where(t => t.IsActive).ToList());
+            _widget.SetActiveTasks(_tasks.Where(t => t.IsActive).ToList());
         }
     }
 
@@ -813,9 +1340,9 @@ public partial class MainWindow : Window
         this.WindowState = WindowState.Normal;
         this.Activate();
         
-        if (_widgetView != null)
+        if (_widget != null)
         {
-            _widgetView.Hide();
+            _widget.Hide();
         }
         
         LoadTasks();
@@ -840,9 +1367,9 @@ public partial class MainWindow : Window
     
     private void UpdateWidgetIfActive()
     {
-        if (_widgetView != null && _widgetView.IsVisible)
+        if (_widget != null && _widget.IsVisible)
         {
-            _widgetView.SetActiveTasks(_tasks.Where(t => t.IsActive).ToList());
+            _widget.SetActiveTasks(_tasks.Where(t => t.IsActive).ToList());
         }
     }
 
@@ -850,35 +1377,59 @@ public partial class MainWindow : Window
 
     private void TasksDataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        // Find the DataGridRow
-        var row = FindVisualParent<DataGridRow>(e.OriginalSource as DependencyObject);
-        if (row != null && !row.IsEditing)
-        {
-            _draggedRow = row;
-        }
+        _draggedRow = null;
+        var source = e.OriginalSource as DependencyObject;
+        var row = FindVisualParent<DataGridRow>(source);
+        if (row == null || row.IsEditing) return;
+
+        // Let the ACTIVE checkbox handle its own clicks
+        if (source is CheckBox || FindVisualParent<CheckBox>(source) != null) return;
+
+        _draggedRow = row;
+        _gridDragStartPoint = e.GetPosition(null);
+
+        // The DataGrid selects (and so opens) a row on mouse *down*, which made every drag open the ticket.
+        // Take over the press and select on mouse up instead, only when the press didn't become a drag.
+        e.Handled = true;
+        TasksDataGrid.Focus();
+    }
+
+    private void TasksDataGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_draggedRow == null) return;
+        var item = _draggedRow.Item;
+        _draggedRow = null;
+        TasksDataGrid.SelectedItem = item; // opens the details via SelectionChanged
     }
 
     private void TasksDataGrid_MouseMove(object sender, MouseEventArgs e)
     {
-        if (e.LeftButton == MouseButtonState.Pressed && _draggedRow != null)
-        {
-            DragDrop.DoDragDrop(_draggedRow, _draggedRow.Item, DragDropEffects.Move);
-            _draggedRow = null; // Reset after drop starts
-        }
+        if (e.LeftButton != MouseButtonState.Pressed || _draggedRow == null) return;
+
+        // Only start a drag after the mouse really moves, so clicking a row never triggers a reorder
+        Point position = e.GetPosition(null);
+        if (Math.Abs(position.X - _gridDragStartPoint.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(position.Y - _gridDragStartPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
+            return;
+
+        var row = _draggedRow;
+        _draggedRow = null; // a drag is not a click: don't select the row when the button is released
+        DragDrop.DoDragDrop(row, row.Item, DragDropEffects.Move);
     }
         
     private void TasksDataGrid_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (TasksDataGrid.ActualWidth > 0)
-        {
-            // Width of all fixed columns + vertical scrollbar approximate width + padding
-            double otherColumnsWidth = 35 + 70 + 100 + 130 + 80 + 30; 
-            double availableWidth = TasksDataGrid.ActualWidth - otherColumnsWidth;
-            
-            if (availableWidth < 250) availableWidth = 250;
-            
-            TitleColumn.Width = new DataGridLength(availableWidth);
-        }
+        if (TasksDataGrid.ActualWidth <= 0) return;
+
+        // Narrow list (details panel open at default size): the state pill becomes a coloured dot
+        bool narrow = TasksDataGrid.ActualWidth < 620;
+        StateColumn.Width = new DataGridLength(narrow ? 44 : 110);
+
+        // The title takes whatever the fixed columns leave (minus room for the vertical scrollbar)
+        double otherColumnsWidth = TasksDataGrid.Columns
+            .Where(c => c != TitleColumn)
+            .Sum(c => c.Width.IsAbsolute ? c.Width.Value : c.ActualWidth);
+        TitleColumn.Width = new DataGridLength(Math.Max(160, TasksDataGrid.ActualWidth - otherColumnsWidth - 22));
     }
 
     private void TasksDataGrid_Drop(object sender, DragEventArgs e)
@@ -942,31 +1493,112 @@ public partial class MainWindow : Window
     private void Nav_Changed(object sender, RoutedEventArgs e)
     {
         if (TasksTabContent == null || AboutTabContent == null || SettingsTabContent == null) return;
-        
-        if (NavTasks?.IsChecked == true)
-        {
-            TasksTabContent.Visibility = Visibility.Visible;
-            AboutTabContent.Visibility = Visibility.Collapsed;
-            SettingsTabContent.Visibility = Visibility.Collapsed;
-        }
-        else if (NavAbout?.IsChecked == true)
-        {
-            TasksTabContent.Visibility = Visibility.Collapsed;
-            AboutTabContent.Visibility = Visibility.Visible;
-            SettingsTabContent.Visibility = Visibility.Collapsed;
-        }
+
+        TasksTabContent.Visibility = NavTasks?.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        AboutTabContent.Visibility = NavAbout?.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        SettingsTabContent.Visibility = NavSettings?.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+
+        if (NavSettings?.IsChecked == true) LoadSettingsIntoControls();
+
+        var page = NavTasks?.IsChecked == true ? TasksTabContent : NavAbout?.IsChecked == true ? AboutTabContent : SettingsTabContent;
+        if (IsLoaded) Motion.FadeSlideIn(page, fromY: 8, milliseconds: 120);
     }
+
+    private const double NavExpandedWidth = 220;
+    private const double NavCompactWidth = 48;
+    private bool _navToggledByUser;
 
     private void ToggleSidebar_Click(object sender, RoutedEventArgs e)
     {
-        if (SidebarColumnDef.Width.Value == 200)
+        _navToggledByUser = true;
+        bool expanded = SidebarColumnDef.Width.Value > NavCompactWidth;
+        SidebarColumnDef.Width = new GridLength(expanded ? NavCompactWidth : NavExpandedWidth);
+    }
+
+    private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // Compact navigation on narrow windows, unless the user chose a width with the ☰ button
+        if (_navToggledByUser || SidebarColumnDef == null) return;
+        SidebarColumnDef.Width = new GridLength(ActualWidth < 1000 ? NavCompactWidth : NavExpandedWidth);
+    }
+
+    // --- Maximize / restore and Snap Layouts ---
+
+    private void MaximizeRestore_Click(object sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+
+    private void UpdateMaximizeState()
+    {
+        bool maximized = WindowState == WindowState.Maximized;
+        MaximizeButton.Content = maximized ? "\xE923" : "\xE922";
+        MaximizeButton.ToolTip = maximized ? "Restore down" : "Maximize";
+        // A maximized WindowChrome window extends past the screen by the resize border; keep content visible
+        RootGrid.Margin = maximized ? new Thickness(7) : new Thickness(0);
+    }
+
+    private const int WM_NCHITTEST = 0x0084;
+    private const int WM_NCMOUSEMOVE = 0x00A0;
+    private const int WM_NCLBUTTONDOWN = 0x00A1;
+    private const int WM_NCLBUTTONUP = 0x00A2;
+    private const int WM_NCMOUSELEAVE = 0x02A2;
+    private const int HTMAXBUTTON = 9;
+
+    /// <summary>
+    /// Reports the maximize button to Windows as the real maximize button (HTMAXBUTTON), so hovering it opens the
+    /// Windows 11 Snap Layouts flyout. Because the button is then non-client area, hover and click are handled here.
+    /// </summary>
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        switch (msg)
         {
-            SidebarColumnDef.Width = new GridLength(60);
+            case WM_NCHITTEST:
+                if (IsOverMaximizeButton(lParam))
+                {
+                    handled = true;
+                    return new IntPtr(HTMAXBUTTON);
+                }
+                break;
+            case WM_NCMOUSEMOVE:
+                SetMaximizeHover(wParam.ToInt32() == HTMAXBUTTON);
+                break;
+            case WM_NCMOUSELEAVE:
+                SetMaximizeHover(false);
+                break;
+            case WM_NCLBUTTONDOWN:
+                if (wParam.ToInt32() == HTMAXBUTTON) handled = true;
+                break;
+            case WM_NCLBUTTONUP:
+                if (wParam.ToInt32() == HTMAXBUTTON)
+                {
+                    handled = true;
+                    SetMaximizeHover(false);
+                    MaximizeRestore_Click(this, new RoutedEventArgs());
+                }
+                break;
         }
-        else
+        return IntPtr.Zero;
+    }
+
+    private bool IsOverMaximizeButton(IntPtr lParam)
+    {
+        if (MaximizeButton == null || !MaximizeButton.IsVisible) return false;
+        int value = unchecked((int)lParam.ToInt64());
+        var screenPoint = new Point((short)(value & 0xFFFF), (short)((value >> 16) & 0xFFFF));
+        try
         {
-            SidebarColumnDef.Width = new GridLength(200);
+            var local = MaximizeButton.PointFromScreen(screenPoint);
+            return local.X >= 0 && local.Y >= 0 && local.X < MaximizeButton.ActualWidth && local.Y < MaximizeButton.ActualHeight;
         }
+        catch (InvalidOperationException)
+        {
+            return false; // not yet connected to a presentation source
+        }
+    }
+
+    private void SetMaximizeHover(bool hover)
+    {
+        if (hover) MaximizeButton.SetResourceReference(BackgroundProperty, "ControlHover");
+        else MaximizeButton.ClearValue(BackgroundProperty);
     }
 
     private void AddNewStep()
@@ -979,6 +1611,7 @@ public partial class MainWindow : Window
             StepsListView.ScrollIntoView(newStep);
             NewStepTextBox.Text = string.Empty;
             NewStepTextBox.Focus();
+            UpdateStepsHeader();
         }
     }
 
@@ -999,7 +1632,8 @@ public partial class MainWindow : Window
 
     private void StepCheckBox_Click(object sender, RoutedEventArgs e)
     {
-        // Just let the binding update the _editingSteps, no need to save immediately.
+        // The binding updates _editingSteps; changes are saved with the task
+        UpdateStepsHeader();
     }
 
     private void RemoveStepButton_Click(object sender, RoutedEventArgs e)
@@ -1007,6 +1641,7 @@ public partial class MainWindow : Window
         if (sender is Button btn && btn.DataContext is TicketStep step)
         {
             _editingSteps.Remove(step);
+            UpdateStepsHeader();
         }
     }
 
@@ -1075,22 +1710,5 @@ public partial class MainWindow : Window
                 _editingSteps.Insert(targetIdx, droppedStep);
             }
         }
-    }
-}
-
-public class LessThanConverter : System.Windows.Data.IValueConverter
-{
-    public object Convert(object value, System.Type targetType, object parameter, System.Globalization.CultureInfo culture)
-    {
-        if (value is double actual && double.TryParse(parameter?.ToString(), out double limit))
-        {
-            return actual < limit;
-        }
-        return false;
-    }
-
-    public object ConvertBack(object value, System.Type targetType, object parameter, System.Globalization.CultureInfo culture)
-    {
-        throw new System.NotImplementedException();
     }
 }

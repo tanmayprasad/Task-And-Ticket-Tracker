@@ -4,10 +4,10 @@
         xmlns:local="clr-namespace:TaskTrackerApp"
         Title="Task And Ticket Tracker" Height="200" Width="450"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
-        Topmost="True" ResizeMode="NoResize" ShowInTaskbar="False"
+        Topmost="True" ResizeMode="NoResize" ShowInTaskbar="False" ShowActivated="False"
         WindowStartupLocation="Manual" Icon="pack://application:,,,/app.ico"
         MinWidth="300" MinHeight="150"
-        LocationChanged="Window_LocationChanged" Loaded="Window_Loaded">
+        SourceInitialized="Window_SourceInitialized" Loaded="Window_Loaded">
     <Window.Resources>
         <local:StringToVisibilityConverter x:Key="StringToVisConverter"/>
         
@@ -117,8 +117,9 @@
         </Style>
     </Window.Resources>
     
+    <Grid>
     <!-- Transparent Background with subtle shadow -->
-    <Border x:Name="MainBorder" Background="#F21A1D24" CornerRadius="8" Margin="8"
+    <Border x:Name="MainBorder" Background="#F2202020" BorderBrush="#3D3D3D" BorderThickness="1" CornerRadius="8" Margin="8"
             MouseLeftButtonDown="Border_MouseLeftButtonDown">
         <Border.Effect>
             <DropShadowEffect ShadowDepth="2" BlurRadius="10" Opacity="0.5" />
@@ -195,9 +196,6 @@
                 <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" VerticalAlignment="Center" Margin="5,0">
                     <StackPanel>
                         <TextBlock x:Name="ActiveTaskTextBlock" Foreground="White" TextWrapping="Wrap" FontSize="20" FontWeight="Bold" Text="No active task selected." HorizontalAlignment="Center" TextAlignment="Center" Margin="0,0,0,5">
-                            <TextBlock.Effect>
-                                <DropShadowEffect ShadowDepth="1" BlurRadius="4" Opacity="0.8"/>
-                            </TextBlock.Effect>
                         </TextBlock>
                         
                         <Grid x:Name="StepDisplayGrid" Visibility="Collapsed" Margin="0,5,0,0" HorizontalAlignment="Center" MaxWidth="350">
@@ -211,7 +209,7 @@
                                 <TextBlock Text="&#xE76B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Foreground="White" FontSize="12"/>
                             </Button>
                             
-                            <Border Grid.Column="1" Background="#11FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Padding="8,4" Margin="2,0">
+                            <Border x:Name="StepPill" Grid.Column="1" Background="#11FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Padding="8,4" Margin="2,0">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
@@ -252,7 +250,7 @@
             </StackPanel>
             
             <!-- Resize Grip -->
-            <Thumb Grid.Row="0" Grid.RowSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" Margin="0,0,-8,-8" Opacity="0.4" DragDelta="ResizeThumb_DragDelta">
+            <Thumb Grid.Row="0" Grid.RowSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" Margin="0,0,-8,-8" Opacity="0.4" DragDelta="ResizeThumb_DragDelta" DragCompleted="ResizeThumb_DragCompleted">
                 <Thumb.Template>
                     <ControlTemplate>
                         <Path Data="M 10,10 L 0,10 L 10,0 Z" Fill="#0A0D12" Width="10" Height="10" Stretch="Fill"/>
@@ -261,4 +259,12 @@
             </Thumb>
         </Grid>
     </Border>
+
+    <!-- Edge-dock tab: the only part left on screen while the docked widget is collapsed -->
+    <Border x:Name="DockTab" Visibility="Collapsed" Margin="8" CornerRadius="4" Background="#6366F1" Cursor="Hand"
+            ToolTipService.InitialShowDelay="{StaticResource HoverDelay}">
+        <TextBlock x:Name="DockTabText" Text="•" Foreground="White" FontSize="10" FontWeight="Bold"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+    </Border>
+    </Grid>
 </Window>
