@@ -1,0 +1,210 @@
+# Publishes a new version of Task And Ticket Tracker to the Microsoft Store.
+#
+# Release flow (see PACKAGING_CONFIG.md → "Releasing to the Microsoft Store"):
+#   1. ./scripts/Set-Version.ps1 -Version 1.5.0.0 -Release     (versions + dated CHANGELOG section)
+#   2. Commit, then:  git tag v1.5.0.0 && git push origin v1.5.0.0
+#   3. This workflow validates, tests and packages the app, then waits for approval in the
+#      "microsoft-store" environment before submitting to Partner Center.
+#
+# "Run workflow" (manual) builds and validates a version without submitting unless "submit" is ticked.
+
+name: Release to Microsoft Store
+
+on:
+  push:
+    tags: [ 'v*.*.*.0' ]          # Store versions always end in .0
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (must match AppxManifest.xml, e.g. 1.5.0.0)'
+        required: true
+        type: string
+      submit:
+        description: 'Submit to the Microsoft Store (unticked = dry run: validate, test and package only)'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: microsoft-store-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write     # create the GitHub release
+
+env:
+  APP_PROJECT: TaskTrackerApp\TaskTrackerApp.csproj
+  PACKAGING_PROJECT: TaskTrackerApp.Packaging\TaskTrackerApp.Packaging.wapproj
+  TEST_PROJECT: TaskTrackerApp.Tests\TaskTrackerApp.Tests.csproj
+
+jobs:
+  build:
+    name: Validate, test and package
+    runs-on: windows-2022          # keeps the UAP/DesktopBridge build tools the .wapproj needs
+    defaults:
+      run:
+        shell: pwsh
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          $version = if ($env:EVENT_NAME -eq 'push') { $env:REF_NAME.TrimStart('v') } else { $env:INPUT_VERSION.Trim() }
+          if ($version -notmatch '^\d+\.\d+\.\d+\.\d+$') { Write-Host "::error::'$version' is not a version like 1.5.0.0"; exit 1 }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Releasing version $version"
+
+      - name: Check the version is Store-ready and consistent
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: ./scripts/Test-ReleaseVersion.ps1 -Version $env:VERSION
+
+      - name: Build release notes from CHANGELOG.md
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          ./scripts/Get-ReleaseNotes.ps1 -Version $env:VERSION -Format Store    -OutFile release/store-release-notes.txt | Out-Null
+          ./scripts/Get-ReleaseNotes.ps1 -Version $env:VERSION -Format Markdown -OutFile release/release-notes.md       | Out-Null
+          "### Microsoft Store — What's new`n``````text`n$(Get-Content -Raw release/store-release-notes.txt)`n``````" >> $env:GITHUB_STEP_SUMMARY
+          Get-Content -Raw release/release-notes.md >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Run unit tests
+        run: dotnet test $env:TEST_PROJECT -c Release
+
+      - name: Restore
+        run: |
+          dotnet restore $env:APP_PROJECT -r win-x64
+          msbuild $env:PACKAGING_PROJECT /t:Restore /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64
+
+      - name: Build Store package (.msixupload)
+        run: >-
+          msbuild $env:PACKAGING_PROJECT
+          /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64
+          /p:UapAppxPackageBuildMode=StoreUpload /p:AppxBundle=Always /p:AppxPackageSigningEnabled=false
+
+      - name: Collect package
+        run: |
+          $package = Get-ChildItem TaskTrackerApp.Packaging\AppPackages -Recurse -Filter *.msixupload | Select-Object -First 1
+          if (-not $package) { Write-Host '::error::No .msixupload was produced'; exit 1 }
+          Copy-Item $package.FullName release/
+          Write-Host "Package: $($package.Name) ($([math]::Round($package.Length / 1MB, 1)) MB)"
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: store-release-${{ steps.version.outputs.version }}
+          path: |
+            release/*.msixupload
+            release/store-release-notes.txt
+            release/release-notes.md
+          if-no-files-found: error
+
+  publish:
+    name: Submit to Microsoft Store
+    needs: build
+    if: github.event_name == 'push' || inputs.submit
+    runs-on: windows-2022
+    # Add required reviewers to this environment (Settings → Environments) so every submission is approved by a person.
+    environment: microsoft-store
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+      # Store ID of Task And Ticket Tracker (public: apps.microsoft.com/detail/9N34FGG6MWT7).
+      # A repository variable STORE_PRODUCT_ID overrides it if the app ever moves.
+      STORE_PRODUCT_ID: ${{ vars.STORE_PRODUCT_ID || '9N34FGG6MWT7' }}
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: store-release-${{ needs.build.outputs.version }}
+          path: release
+
+      - name: Check Store secrets are configured
+        env:
+          TENANT: ${{ secrets.PARTNER_CENTER_TENANT_ID }}
+          SELLER: ${{ secrets.PARTNER_CENTER_SELLER_ID }}
+          CLIENT: ${{ secrets.PARTNER_CENTER_CLIENT_ID }}
+          SECRET: ${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}
+        run: |
+          $missing = @()
+          if (-not $env:TENANT)           { $missing += 'PARTNER_CENTER_TENANT_ID' }
+          if (-not $env:SELLER)           { $missing += 'PARTNER_CENTER_SELLER_ID' }
+          if (-not $env:CLIENT)           { $missing += 'PARTNER_CENTER_CLIENT_ID' }
+          if (-not $env:SECRET)           { $missing += 'PARTNER_CENTER_CLIENT_SECRET' }
+          if ($missing) { Write-Host "::error::Missing secrets: $($missing -join ', '). See PACKAGING_CONFIG.md."; exit 1 }
+
+      - name: Setup Microsoft Store Developer CLI
+        uses: microsoft/microsoft-store-apppublisher@v1.1
+
+      - name: Configure Microsoft Store Developer CLI
+        env:
+          TENANT: ${{ secrets.PARTNER_CENTER_TENANT_ID }}
+          SELLER: ${{ secrets.PARTNER_CENTER_SELLER_ID }}
+          CLIENT: ${{ secrets.PARTNER_CENTER_CLIENT_ID }}
+          SECRET: ${{ secrets.PARTNER_CENTER_CLIENT_SECRET }}
+        run: |
+          msstore reconfigure --tenantId $env:TENANT --sellerId $env:SELLER --clientId $env:CLIENT --clientSecret $env:SECRET
+          if ($LASTEXITCODE -ne 0) { Write-Host '::error::msstore reconfigure failed'; exit 1 }
+
+      # 'publish' recreates the draft submission, so it must run BEFORE the release notes are set.
+      - name: Upload package to a draft submission
+        run: |
+          $package = Get-ChildItem release -Filter *.msixupload | Select-Object -First 1
+          msstore publish $PWD --inputFile $package.FullName --appId $env:STORE_PRODUCT_ID --noCommit
+          if ($LASTEXITCODE -ne 0) { Write-Host '::error::msstore publish failed'; exit 1 }
+
+      - name: Set "What's new in this version" from CHANGELOG.md
+        run: |
+          $notes = [IO.File]::ReadAllText("$PWD/release/store-release-notes.txt")
+          $raw = (msstore submission get $env:STORE_PRODUCT_ID) -join "`n"
+          if ($LASTEXITCODE -ne 0) { Write-Host '::error::msstore submission get failed'; exit 1 }
+          # Tolerate any non-JSON text the CLI prints around the payload
+          $json = $raw.Substring($raw.IndexOf('{'), $raw.LastIndexOf('}') - $raw.IndexOf('{') + 1)
+          $submission = $json | ConvertFrom-Json
+
+          $languages = @($submission.Listings.PSObject.Properties.Name)
+          if ($languages.Count -eq 0) { Write-Host '::error::The submission has no listings'; exit 1 }
+          foreach ($language in $languages) {
+            $submission.Listings.$language.BaseListing.ReleaseNotes = $notes
+          }
+          Write-Host "Release notes set for: $($languages -join ', ')"
+
+          $payload = $submission | ConvertTo-Json -Depth 100 -Compress
+          msstore submission update $env:STORE_PRODUCT_ID $payload
+          if ($LASTEXITCODE -ne 0) { Write-Host '::error::msstore submission update failed'; exit 1 }
+
+      - name: Submit for certification
+        run: |
+          msstore submission publish $env:STORE_PRODUCT_ID
+          if ($LASTEXITCODE -ne 0) { Write-Host '::error::msstore submission publish failed'; exit 1 }
+          msstore submission status $env:STORE_PRODUCT_ID
+          "Submitted **$env:VERSION** to the Microsoft Store. Certification usually takes up to 3 business days; track it in Partner Center." >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          $package = (Get-ChildItem release -Filter *.msixupload | Select-Object -First 1).FullName
+          gh release create "v$env:VERSION" $package --repo $env:REPO --target $env:SHA `
+            --title "Task And Ticket Tracker $env:VERSION" --notes-file release/release-notes.md
+          if ($LASTEXITCODE -ne 0) { Write-Host '::warning::The Store submission succeeded, but the GitHub release could not be created.' }

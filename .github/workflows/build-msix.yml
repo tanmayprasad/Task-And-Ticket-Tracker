@@ -20,6 +20,9 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
+    - name: Run unit tests
+      run: dotnet test TaskTrackerApp.Tests\TaskTrackerApp.Tests.csproj -c Release
+
     - name: Restore NuGet packages
       run: |
         dotnet restore TaskTrackerApp\TaskTrackerApp.csproj -r win-x64

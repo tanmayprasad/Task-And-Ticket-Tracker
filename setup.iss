@@ -1,10 +1,10 @@
 [Setup]
 AppName=Task And Ticket Tracker
-AppVersion=1.4.1.0
+AppVersion=1.4.3.7
 DefaultDirName={autopf}\TaskTrackerApp
 DefaultGroupName=TaskTrackerApp
 OutputDir=Releases
-OutputBaseFilename=TaskTrackerApp-win-Setup-v1.4.1.0
+OutputBaseFilename=TaskTrackerApp-win-Setup-v1.4.3.7
 Compression=lzma
 SolidCompression=yes
 PrivilegesRequired=lowest
