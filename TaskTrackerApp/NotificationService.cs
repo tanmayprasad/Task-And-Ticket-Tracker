@@ -10,7 +10,7 @@ public class NotificationService
     private readonly ContextAwareEngine _contextEngine;
     private readonly TaskTrackerApp.Data.SettingsManager _settingsManager;
     private readonly Action<string, string> _showToastAction;
-    private System.Timers.Timer _pollingTimer;
+    private readonly System.Windows.Threading.DispatcherTimer _pollingTimer;
     private List<TaskTrackerApp.Models.TaskModel> _tasks = new();
     private HashSet<Guid> _notifiedTasks = new();
 
@@ -20,9 +20,10 @@ public class NotificationService
         _settingsManager = settingsManager;
         _showToastAction = showToastAction;
         
-        // Poll every 1 minute
-        _pollingTimer = new System.Timers.Timer(60000);
-        _pollingTimer.Elapsed += PollingTimer_Elapsed;
+        // Poll every 1 minute. A DispatcherTimer runs on the UI thread, so the task list is never
+        // read here while MainWindow is modifying it.
+        _pollingTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+        _pollingTimer.Tick += PollingTimer_Tick;
         _pollingTimer.Start();
     }
 
@@ -31,7 +32,7 @@ public class NotificationService
         _tasks = tasks;
     }
 
-    private void PollingTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    private void PollingTimer_Tick(object? sender, EventArgs e)
     {
         if (_tasks == null) return;
         

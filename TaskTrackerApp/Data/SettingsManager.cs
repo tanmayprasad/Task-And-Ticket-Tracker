@@ -36,6 +36,8 @@ public class SettingsManager
         }
         catch
         {
+            // Keep the unreadable file for inspection instead of silently overwriting it on the next save
+            SafeFile.Quarantine(_settingsFilePath);
             return new SettingsModel();
         }
     }
@@ -43,6 +45,14 @@ public class SettingsManager
     public void SaveSettings(SettingsModel settings)
     {
         var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(_settingsFilePath, json);
+        try
+        {
+            SafeFile.WriteAllTextAtomic(_settingsFilePath, json);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Settings are non-critical (e.g. widget position while dragging); never crash the app over them
+            System.Diagnostics.Debug.WriteLine($"Failed to save settings: {ex.Message}");
+        }
     }
 }
