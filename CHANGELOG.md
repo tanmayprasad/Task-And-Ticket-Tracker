@@ -4,8 +4,7 @@ All notable changes to the **Task and Ticket Tracker** project will be documente
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to the specific versioning rules defined in `PACKAGING_CONFIG.md`.
 
-## [1.4.3.7] - In Development
-> Development build. Because this cycle adds a new view (widget styles), the Store release will be `1.5.0.0` (see *Versioning Rules* in `PACKAGING_CONFIG.md`).
+## [1.5.0.0] - 2026-09-25
 
 ### Store release notes
 - A fresh Windows 11 look: Mica window, your Windows accent colour, a navigation pane, and tasks shown as cards.

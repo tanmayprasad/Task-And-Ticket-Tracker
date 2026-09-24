@@ -9,7 +9,7 @@ When using the MSIX Packaging Tool, use the following details:
 *   **Package display name:** `TanmayPrasad.TaskAndTicketTracker_5njg6p2f7v32e`
 *   **Publisher name:** `CN=00F61C64-FF38-455E-8D55-F7094707F364`
 *   **Publisher display name:** `Tanmay Prasad`
-*   **Version:** the value in `TaskTrackerApp.Packaging/AppxManifest.xml` (currently `1.4.3.7`, a development build)
+*   **Version:** the value in `TaskTrackerApp.Packaging/AppxManifest.xml` (currently `1.5.0.0`, the latest Store release)
 *   **Package Description:** `Task And Ticket Tracker is a lightweight, context-aw` (Note: ensure it matches the store listing if required)
 
 ## Past Validation Feedbacks (Partner Center Errors)

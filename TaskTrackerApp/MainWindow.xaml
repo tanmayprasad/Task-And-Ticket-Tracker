@@ -644,7 +644,7 @@
                     <StackPanel>
                         <TextBlock Text="About" Style="{StaticResource TitleText}" Margin="0,0,0,20"/>
                         <TextBlock Text="Task And Ticket Tracker is a lightweight, context-aware productivity tool designed to help you stay focused on what matters." Foreground="{DynamicResource TextHighlight}" TextWrapping="Wrap" Margin="0,0,0,10" FontSize="14"/>
-                        <TextBlock Text="Version: 1.4.3.7" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,20"/>
+                        <TextBlock Text="Version: 1.5.0.0" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,20"/>
                         
                         <TextBlock Text="What it does" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,10"/>
                         <TextBlock Text="• Capture tasks in seconds with Quick add, steps and due-date shortcuts" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,6" TextWrapping="Wrap"/>
