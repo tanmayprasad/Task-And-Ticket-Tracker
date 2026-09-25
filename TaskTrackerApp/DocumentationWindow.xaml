@@ -119,7 +119,7 @@
                             <sys:String>Quick add — type a title above the list and press Enter. It is added to the bottom as To Do. Start with #123 or a key like AB-12 to set the ticket number. Ctrl+Enter opens the full form instead.</sys:String>
                             <sys:String>Full form — click New task (Ctrl+N). The cursor starts in Title, the only required field.</sys:String>
                             <sys:String>Steps — press Enter to add each step, or paste a list to add one step per line. Drag the ⋮⋮ handle to reorder.</sys:String>
-                            <sys:String>Ticket number — leave it empty to use the automatic number shown in the box (for example “Auto: i18”).</sys:String>
+                            <sys:String>Ticket number — leave it empty to use the automatic number shown in the box (for example “Auto: i18”). After you save, the ticket number is fixed: it appears as the heading of the task and can't be edited.</sys:String>
                             <sys:String>Start now — makes the task active and In progress straight away, within your active-task limit. Leave it off to queue the task as To Do.</sys:String>
                             <sys:String>Add to Top or Bottom — decides where the new task goes in your priority list.</sys:String>
                             <sys:String>Due date — choose Today, Tomorrow or Next week, or click the date to pick one. Add a time only if it matters; without one the task is due all day.</sys:String>
@@ -136,7 +136,7 @@
                             <TextBlock Style="{StaticResource H2}" Text="The task list"/>
                         </StackPanel>
                         <ItemsControl Style="{StaticResource Bullets}">
-                            <sys:String># is the priority (1 = most important). Drag a row up or down to change it.</sys:String>
+                            <sys:String>Each card starts with the priority number, then the ticket number and the title. Drag a card up or down to change its priority (1 = most important).</sys:String>
                             <sys:String>Under each title you see the due date (amber = due today, red = overdue) and step progress, for example 2/5.</sys:String>
                             <sys:String>Active tasks have a coloured bar on the left. Done tasks are struck through.</sys:String>
                             <sys:String>Click a task to open its details. The expand button shows them full-width; Esc closes them.</sys:String>

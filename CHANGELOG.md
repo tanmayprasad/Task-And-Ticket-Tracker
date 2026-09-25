@@ -45,6 +45,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Multi-line boxes (Description, Acceptance criteria) start at the top instead of centring their text.
 - The full-width new-task form no longer cuts off the *Top / Bottom* control; Start now, Add to, State and Priority stack vertically.
 - Consistent page margins and title position on Tasks, Settings, About and the full-width form.
+- The navigation pane now starts **collapsed** (icons only); ☰ expands it. The automatic width-based expanding was removed.
+- In the task list the **ticket number is primary information**, shown in accent colour before the title on the main line (it was a small tag under the title).
+- Editing a task shows its **ticket number as the heading** and the ticket can no longer be changed after the task is saved. New tasks can still type their own number or use the automatic one.
 - The task form always opens scrolled to the top, and ticket / due / step chips in narrow cards wrap instead of being clipped.
 
 ### Added

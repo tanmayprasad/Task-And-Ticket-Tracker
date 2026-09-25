@@ -25,13 +25,13 @@ Only one instance of the app can run at a time; launching it again does nothing 
 *   **Quick add:** type in the **Add a task** box above the list and press `Enter`. The task is added to the bottom as *To Do*. Start with a ticket number to set it, e.g. `#123 Fix login` or `AB-12 Fix login`. Press `Ctrl+Enter` instead to open the full form with that title.
 *   **New Task (full form):** Click **New task** (`Ctrl+N`). The cursor is already in **Title** (required).
     *   **Steps** come right after the title. Press `Enter` to add one, or paste a list to add one step per line.
-    *   **Ticket number** shows the number it will get automatically (e.g. `Auto: i18`); type your own to override it.
+    *   **Ticket number** shows the number it will get automatically (e.g. `Auto: i18`); type your own to override it. Once the task is saved its ticket number is **fixed**: it becomes the heading of the task and can't be edited.
     *   **Start now** makes the task active immediately (In progress, shown on the widget). Leave it off to queue it as *To Do*.
     *   **Add to Top / Bottom** decides where the task goes in the priority list.
     *   **Due date:** use *Today*, *Tomorrow* or *Next week*, or click the date to pick one. Add a time only if it matters; without one the task is due all day.
     *   Click **Save task** (`Ctrl+S`), or **Save & new** (`Ctrl+Enter`) to go straight on to the next task.
 *   **Unsaved changes:** if you leave a form with edits (another task, New task, Cancel or `Esc`), the app asks whether to keep editing, discard or save.
-*   **Reading the list:** each row shows its priority number (`#`), ticket number and title. Under the title you see the **due date** (amber = due today, red = overdue) and **step progress** (e.g. `2/5`). Active tasks have a coloured bar on the left. When the details panel is open and space is tight, the state shows as a coloured dot.
+*   **Reading the list:** each row shows its priority number, then the **ticket number in accent colour followed by the title** on the main line. Under the title you see the **due date** (amber = due today, red = overdue) and **step progress** (e.g. `2/5`). Active tasks have a coloured bar on the left. When the details panel is open and space is tight, the state shows as a coloured dot.
 *   **Edit a Task:** Click a task in the list to open its details. Use the expand button to open the details full-width. `Esc` closes the details without saving.
 *   **Details:** Each task has a ticket number, title, state (*To Do*, *In progress*, *Done*), target date and time, description, acceptance criteria and **Steps**.
 *   **Steps:** Break a ticket into sub-task steps. Type a step and press **Enter** to add it, drag the handle to reorder, and use the checkbox to mark it done. Step changes are kept only when you click **Save Task**.
@@ -105,7 +105,7 @@ Open **Settings** at the bottom of the navigation pane to change the active-task
 
 *   The **sun/moon** button in the title bar quickly switches between Dark and Light.
 *   The app uses your **Windows accent colour** and, on Windows 11, the **Mica** window material. Change the accent in Windows Settings → Personalization → Colors; the app updates straight away.
-*   The ☰ button collapses the navigation pane to icons (it also compacts automatically on narrow windows).
+*   The navigation pane starts **collapsed to icons**. Click ☰ to expand it and show the labels.
 
 ## 8. Your Data
 

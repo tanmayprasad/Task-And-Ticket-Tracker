@@ -700,7 +700,13 @@ public partial class MainWindow : Window
         }
 
         bool isNew = !_tasks.Any(t => t.Id == task.Id);
-        DetailsHeaderText.Text = isNew ? "New task" : "Task details";
+        // Existing tasks show their ticket number as the heading and can't change it; new tasks (and legacy
+        // tasks that never got a number) still get the editable field
+        bool hasTicket = !isNew && !string.IsNullOrWhiteSpace(task.VstsNumber);
+        DetailsHeaderText.Text = isNew ? "New task" : hasTicket ? $"#{task.VstsNumber}" : "Task details";
+        DetailsHeaderText.SetResourceReference(TextBlock.ForegroundProperty, hasTicket ? "AccentText" : "TextPrimary");
+        DetailsHeaderCaption.Visibility = hasTicket ? Visibility.Visible : Visibility.Collapsed;
+        TicketField.Visibility = hasTicket ? Visibility.Collapsed : Visibility.Visible;
         PriorityText.Text = $"#{task.Priority} in the list";
         TextBoxHelper.SetPlaceholder(VstsTextBox, $"Auto: {TaskInput.NextAutoTicket(_tasks)}");
         DeleteTaskButton.Visibility = isNew ? Visibility.Collapsed : Visibility.Visible;
@@ -772,7 +778,11 @@ public partial class MainWindow : Window
 
         bool isNew = !_tasks.Any(t => t.Id == _currentTask.Id);
 
-        _currentTask.VstsNumber = string.IsNullOrWhiteSpace(VstsTextBox.Text) ? TaskInput.NextAutoTicket(_tasks) : VstsTextBox.Text.Trim();
+        // The ticket number is fixed once a task has one; only new tasks (or legacy tasks without a number) set it here
+        if (isNew || string.IsNullOrWhiteSpace(_currentTask.VstsNumber))
+        {
+            _currentTask.VstsNumber = string.IsNullOrWhiteSpace(VstsTextBox.Text) ? TaskInput.NextAutoTicket(_tasks) : VstsTextBox.Text.Trim();
+        }
         _currentTask.Title = TitleTextBox.Text.Trim();
         _currentTask.Description = DescriptionTextBox.Text;
         _currentTask.AcceptanceCriteria = AcTextBox.Text;
@@ -1506,20 +1516,12 @@ public partial class MainWindow : Window
 
     private const double NavExpandedWidth = 220;
     private const double NavCompactWidth = 48;
-    private bool _navToggledByUser;
 
+    // The pane starts collapsed (icons only, see MainWindow.xaml) and the hamburger button expands it
     private void ToggleSidebar_Click(object sender, RoutedEventArgs e)
     {
-        _navToggledByUser = true;
         bool expanded = SidebarColumnDef.Width.Value > NavCompactWidth;
         SidebarColumnDef.Width = new GridLength(expanded ? NavCompactWidth : NavExpandedWidth);
-    }
-
-    private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        // Compact navigation on narrow windows, unless the user chose a width with the ☰ button
-        if (_navToggledByUser || SidebarColumnDef == null) return;
-        SidebarColumnDef.Width = new GridLength(ActualWidth < 1000 ? NavCompactWidth : NavExpandedWidth);
     }
 
     // --- Maximize / restore and Snap Layouts ---

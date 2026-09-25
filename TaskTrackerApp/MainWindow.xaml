@@ -8,7 +8,7 @@
         StateChanged="Window_StateChanged"
         Background="{DynamicResource WindowBackground}" Foreground="{DynamicResource TextSecondary}" WindowStartupLocation="CenterScreen"
         FontFamily="Segoe UI Variable Text, Segoe UI" Icon="pack://application:,,,/app.ico"
-        MinWidth="720" MinHeight="480" SizeChanged="Window_SizeChanged">
+        MinWidth="720" MinHeight="480">
     
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="40" ResizeBorderThickness="6" CornerRadius="0" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
@@ -68,7 +68,7 @@
         <!-- Navigation pane + content layer -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="SidebarColumnDef" Width="220"/>
+                <ColumnDefinition x:Name="SidebarColumnDef" Width="48"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -234,11 +234,18 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel VerticalAlignment="Center" Margin="0,9" ToolTip="{Binding Title}" ToolTipService.InitialShowDelay="400">
-                                        <TextBlock x:Name="TitleText" Text="{Binding Title}" Foreground="{DynamicResource TextPrimary}" FontSize="14" TextTrimming="CharacterEllipsis"/>
+                                        <!-- Primary line: ticket number and title -->
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="TicketText" Grid.Column="0" Text="{Binding VstsNumber, StringFormat=#{0}}" MinWidth="44" Margin="0,0,10,0"
+                                                       FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource AccentText}"
+                                                       Visibility="{Binding VstsNumber, Converter={StaticResource StringToVis}}"/>
+                                            <TextBlock x:Name="TitleText" Grid.Column="1" Text="{Binding Title}" Foreground="{DynamicResource TextPrimary}" FontSize="14" TextTrimming="CharacterEllipsis"/>
+                                        </Grid>
                                         <WrapPanel x:Name="MetaLine" Orientation="Horizontal" Margin="0,5,0,-4">
-                                            <Border Style="{StaticResource Chip}" Visibility="{Binding VstsNumber, Converter={StaticResource StringToVis}}">
-                                                <TextBlock Text="{Binding VstsNumber, StringFormat=#{0}}" FontSize="12" Foreground="{DynamicResource TextSecondary}"/>
-                                            </Border>
                                             <Border x:Name="DueChip" Style="{StaticResource Chip}" Visibility="{Binding Text, ElementName=DueText, Converter={StaticResource StringToVis}}">
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock x:Name="DueIcon" Text="&#xE787;" FontFamily="{StaticResource IconFont}" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,5,0"/>
@@ -268,6 +275,8 @@
                                         <DataTrigger Binding="{Binding State}" Value="Done">
                                             <Setter TargetName="TitleText" Property="Foreground" Value="{DynamicResource TextMuted}"/>
                                             <Setter TargetName="TitleText" Property="TextDecorations" Value="Strikethrough"/>
+                                            <Setter TargetName="TicketText" Property="Foreground" Value="{DynamicResource TextMuted}"/>
+                                            <Setter TargetName="TicketText" Property="TextDecorations" Value="Strikethrough"/>
                                         </DataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
@@ -372,7 +381,10 @@
                     </Grid.RowDefinitions>
                     
                     <Grid Grid.Row="0" Margin="0,0,20,25">
-                        <TextBlock x:Name="DetailsHeaderText" Text="Task details" Style="{StaticResource SubtitleText}" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock x:Name="DetailsHeaderText" Text="Task details" Style="{StaticResource SubtitleText}" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="DetailsHeaderCaption" Text="Task details" Style="{StaticResource CaptionText}" VerticalAlignment="Bottom" Margin="12,0,0,3" Visibility="Collapsed"/>
+                        </StackPanel>
                         <Button x:Name="MaximizeDetailsButton" Content="&#xE922;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" HorizontalAlignment="Right" Click="ToggleMaximize_Click" Cursor="Hand" ToolTip="Expand details" AutomationProperties.Name="Expand or restore details" FontSize="14" Padding="5"/>
                     </Grid>
 
@@ -467,10 +479,12 @@
 
                                 <!-- 3. Planning (moves to the right column in the full-width layout) -->
                                 <StackPanel x:Name="PlanningSection" Margin="0,16,0,0">
-                                    <TextBlock Text="Ticket number" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                    <Grid Margin="0,0,0,18">
-                                        <TextBox x:Name="VstsTextBox" MaxLength="50" AutomationProperties.Name="Ticket number" ToolTip="Leave empty to use the automatic number"/>
-                                    </Grid>
+                                    <StackPanel x:Name="TicketField">
+                                        <TextBlock Text="Ticket number" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                        <Grid Margin="0,0,0,18">
+                                            <TextBox x:Name="VstsTextBox" MaxLength="50" AutomationProperties.Name="Ticket number" ToolTip="Leave empty to use the automatic number. The number can't be changed after the task is saved."/>
+                                        </Grid>
+                                    </StackPanel>
 
                                     <Grid Margin="0,0,0,18">
                                         <Grid.RowDefinitions>

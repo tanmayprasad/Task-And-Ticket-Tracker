@@ -255,6 +255,7 @@ Covered by `TaskTrackerApp.Tests/TaskRepositoryTests.cs`. `TaskRepository(string
 | **Never zero active tasks** | If no non-Done task is active, the top-priority non-Done task is auto-activated and an *"Auto-Activated Next Task"* notification is shown. This also runs on every restore from the tray. | `EnforceActiveTaskRules` |
 | **Active-task limit** | Checking ACTIVE beyond `MaxActiveTasks` shows a warning and reverts the check. | `ActiveCheckBox_Clicked` |
 | **Auto ticket ID** | A blank ticket number becomes `i{max+1}`, based on existing `i<N>` IDs. It is shown in advance as the placeholder "Auto: iN". | `TaskInput.NextAutoTicket` |
+| **Ticket number is fixed once set** | Existing tasks show the ticket as the heading and have no ticket field; `SaveCurrentTask` never overwrites `VstsNumber` for them. Only new tasks (or legacy tasks without a number) set it on first save. | `PopulateForm`, `SaveCurrentTask` |
 | **Quick add** | Enter adds a To Do task at the bottom. `#X title` or a leading `123+`-digit / `KEY-12` token sets the ticket. Ctrl+Enter opens an unsaved, prefilled form. | `QuickAddTextBox_PreviewKeyDown`, `TaskInput.ParseQuickAdd` |
 | **New-task options** | *Start now* → In progress + active, falling back to To Do with a snackbar if `MaxActiveTasks` is reached. *Add to Top* inserts at index 0 (priority #1); *Bottom* appends. | `SaveCurrentTask` |
 | **Unsaved-changes guard** | `FormSnapshot()` is taken in `PopulateForm` and after save. Row switch, New task, quick-add Ctrl+Enter, Cancel and Esc go through `RunAfterUnsavedCheck` and show the inline bar when the snapshot differs. | `IsFormDirty`, `ShowUnsavedBar` |
@@ -283,7 +284,7 @@ Covered by `TaskTrackerApp.Tests/TaskRepositoryTests.cs`. `TaskRepository(string
   - The 40 px title bar holds the app icon and name, and the theme toggle (sun/moon).
   - Minimize (—) goes to the widget; close (✕) goes to the tray only (no widget). Quit via tray → Exit.
 - **Navigation pane:**
-  - Windows 11 NavigationView style, 220 px (icon + label) or 48 px compact. It auto-compacts under 1000 px unless the user toggled ☰.
+  - Windows 11 NavigationView style, 220 px (icon + label) or 48 px compact. **It starts collapsed** (`SidebarColumnDef` = 48) on every launch; ☰ (`ToggleSidebar_Click`) expands it. There is no width-based auto behaviour.
   - Items: Tasks (top), About and Settings (bottom), all `NavItem` radio buttons with an animated accent pill.
   - Pages sit on a rounded, translucent **content layer** (`LayerBackground`).
   - All icon buttons have tooltips and `AutomationProperties.Name`.
@@ -291,8 +292,7 @@ Covered by `TaskTrackerApp.Tests/TaskRepositoryTests.cs`. `TaskRepository(string
   - "Tasks" heading, a **New task** button, a search box, a `States` multi-select filter and an **Active only** filter.
   - **DataGrid columns:**
     - `#` (priority rank; a drag grip appears on row hover)
-    - TICKET
-    - TITLE (fills the remaining width), with a secondary line: due date (`DueTextConverter`, coloured by `DueUrgencyConverter`) and step progress (`StepProgressConverter`)
+    - TICKET + TITLE (fills the remaining width): the primary line is the ticket number (`#i17`, semibold accent colour, min width 44 so titles align) followed by the title; the secondary chip line shows the due date (`DueTextConverter`, coloured by `DueUrgencyConverter`) and step progress (`StepProgressConverter`), and wraps in narrow cards
     - STATE: a pill, or a coloured dot below a 620 px list width, via `LessThanConverter` with parameter 60
     - ACTIVE
   - **Row styling:** active rows get an accent left bar and the `ActiveRowBackground` tint; Done tasks are struck through. Row height is 50.
@@ -303,11 +303,11 @@ Covered by `TaskTrackerApp.Tests/TaskRepositoryTests.cs`. `TaskRepository(string
   - **Title\*:** autofocused for new tasks.
   - **Steps:** the header shows "n/m done". Enter adds a step; pasting multiple lines adds one step per line (`TaskInput.SplitStepLines`). Steps can be removed and reordered by dragging.
   - **Planning:**
-    - Ticket number (placeholder "Auto: iN").
+    - Ticket number (placeholder "Auto: iN"): **only for new tasks** (and legacy tasks that never got a number). It lives in `TicketField`, which is collapsed for tasks that already have one.
     - New tasks: *Start now* toggle and *Add to* Top/Bottom. Existing tasks: State and Priority ("#n in the list").
     - Due date: button + hidden DatePicker popup; chips Today / Tomorrow / Next week / Clear; optional time via "+ Add a time" (30-minute `TimeComboBox`; off-slot legacy times are preserved). No time = stored as 00:00 = due all day.
   - **Notes:** Description and AC auto-grow (60–300 px, 120–420 px full-width). Counters are shown only at 80% or more of the limit (`NearLimitVisibilityConverter`).
-  - The header reads "New task" or "Task details". Delete is hidden for unsaved tasks; *Save & new* is shown only for new tasks.
+  - The header reads "New task" for new tasks, and for existing tasks it shows the **ticket number as the heading** (`#i17`, accent colour, with a small "Task details" caption). Delete is hidden for unsaved tasks; *Save & new* is shown only for new tasks.
   - Buttons: Delete (immediate, with Undo) · Cancel · Save & new · Save task. The **unsaved-changes bar** (Keep editing / Discard / Save) appears above them when needed.
 - **Keyboard shortcuts** (`RegisterShortcuts`: `RoutedCommand` plus `KeyBinding`):
   - Ctrl+N new, Ctrl+S save, Ctrl+Enter save & new, Esc close details (or dismiss the unsaved bar), Ctrl+F search.
