@@ -5,7 +5,8 @@
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                    xmlns:theming="clr-namespace:TaskTrackerApp.Theming">
 
     <sys:Double x:Key="ControlHeight">32</sys:Double>
     <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
@@ -423,11 +424,21 @@
                     <Grid>
                         <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4"/>
-                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        <!-- WPF applies the TextBox's Padding inside the content host itself; adding a margin here would indent typed text twice -->
+                        <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        <!-- Placeholder: same padding, alignment and font as the typed text (Padding adds the 2 px text inset WPF puts before typed text) -->
+                        <TextBlock x:Name="PlaceholderText" Text="{Binding (theming:TextBoxHelper.Placeholder), RelativeSource={RelativeSource TemplatedParent}}"
+                                   Margin="{TemplateBinding Padding}" Padding="2,0,0,0" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                   FontSize="{TemplateBinding FontSize}" FontFamily="{TemplateBinding FontFamily}"
+                                   Foreground="{DynamicResource TextMuted}" TextTrimming="CharacterEllipsis"
+                                   IsHitTestVisible="False" Visibility="Collapsed"/>
                         <Border x:Name="FocusLine" Height="2" VerticalAlignment="Bottom" CornerRadius="0,0,4,4"
                                 Background="{DynamicResource PrimaryBackground}" Visibility="Collapsed"/>
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="Text" Value="">
+                            <Setter TargetName="PlaceholderText" Property="Visibility" Value="Visible"/>
+                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BorderMedium}"/>
                         </Trigger>
@@ -435,6 +446,9 @@
                             <Setter TargetName="Bd" Property="Background" Value="{DynamicResource InputFocusedBackground}"/>
                             <Setter TargetName="FocusLine" Property="Visibility" Value="Visible"/>
                         </Trigger>
+                        <DataTrigger Binding="{Binding (theming:TextBoxHelper.AccentPlaceholder), RelativeSource={RelativeSource Self}}" Value="True">
+                            <Setter TargetName="PlaceholderText" Property="Foreground" Value="{DynamicResource AccentText}"/>
+                        </DataTrigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.5"/>
                         </Trigger>
@@ -442,6 +456,13 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <!-- Multi-line boxes start at the top instead of centring their text -->
+            <Trigger Property="AcceptsReturn" Value="True">
+                <Setter Property="VerticalContentAlignment" Value="Top"/>
+                <Setter Property="Padding" Value="10,8"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <!-- ============================================================ ComboBox -->
@@ -802,7 +823,7 @@
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="4"/>
         <Setter Property="Padding" Value="6,1"/>
-        <Setter Property="Margin" Value="0,0,6,0"/>
+        <Setter Property="Margin" Value="0,0,6,4"/>
     </Style>
 
     <!-- ============================================================ Surfaces -->

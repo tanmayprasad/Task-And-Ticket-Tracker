@@ -54,10 +54,13 @@ public partial class MainWindow : Window
         {
             if (WindowEffects.GetUsesSystemCaptionButtons(this))
             {
-                // Windows draws native caption buttons (with Snap Layouts); hide ours and keep the
-                // theme button clear of the native button area (3 x 46 px)
+                // Windows draws native caption buttons (with Snap Layouts); hide ours and line the title bar
+                // up with the native buttons (their size depends on DPI and window state)
                 CaptionButtonsPanel.Visibility = Visibility.Collapsed;
-                ThemeToggleButton.Margin = new Thickness(0, 4, 146, 0);
+                PositionTitleBar();
+                Loaded += (s2, e2) => PositionTitleBar();
+                SizeChanged += (s2, e2) => PositionTitleBar();
+                StateChanged += (s2, e2) => Dispatcher.BeginInvoke(new Action(PositionTitleBar), System.Windows.Threading.DispatcherPriority.Loaded);
             }
             else
             {
@@ -458,10 +461,6 @@ public partial class MainWindow : Window
 
     private void Filter_Changed(object sender, RoutedEventArgs e)
     {
-        if (FilterPlaceholder != null)
-        {
-            FilterPlaceholder.Visibility = string.IsNullOrEmpty(FilterVstsTextBox.Text) ? Visibility.Visible : Visibility.Hidden;
-        }
         RefreshGrid();
     }
 
@@ -568,7 +567,7 @@ public partial class MainWindow : Window
             TasksDividerColumn.Width = new GridLength(0);
             TaskDetailsColumn.Width = new GridLength(1, GridUnitType.Star);
             TaskDetailsGrid.Width = double.NaN;
-            TaskDetailsGrid.Margin = new Thickness(50, 10, 50, 20);
+            TaskDetailsGrid.Margin = new Thickness(28, 10, 28, 20); // same gutter as the other pages
 
             MaximizeDetailsButton.Content = "\xE73F";
             MaximizeDetailsButton.ToolTip = "Restore details";
@@ -703,7 +702,7 @@ public partial class MainWindow : Window
         bool isNew = !_tasks.Any(t => t.Id == task.Id);
         DetailsHeaderText.Text = isNew ? "New task" : "Task details";
         PriorityText.Text = $"#{task.Priority} in the list";
-        VstsPlaceholder.Text = $"Auto: {TaskInput.NextAutoTicket(_tasks)}";
+        TextBoxHelper.SetPlaceholder(VstsTextBox, $"Auto: {TaskInput.NextAutoTicket(_tasks)}");
         DeleteTaskButton.Visibility = isNew ? Visibility.Collapsed : Visibility.Visible;
         SaveAndNewButton.Visibility = isNew ? Visibility.Visible : Visibility.Collapsed;
 
@@ -725,6 +724,7 @@ public partial class MainWindow : Window
         UpdateStepsHeader();
 
         _formSnapshot = FormSnapshot();
+        DetailsScroll.ScrollToTop();
     }
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -1523,6 +1523,34 @@ public partial class MainWindow : Window
     }
 
     // --- Maximize / restore and Snap Layouts ---
+
+    protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+    {
+        base.OnDpiChanged(oldDpi, newDpi);
+        Dispatcher.BeginInvoke(new Action(PositionTitleBar), System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
+    /// <summary>
+    /// With native caption buttons, the title bar takes their height and the theme button sits on the same line,
+    /// directly to their left, at the same height.
+    /// </summary>
+    private void PositionTitleBar()
+    {
+        if (!WindowEffects.GetUsesSystemCaptionButtons(this)) return;
+        if (!WindowEffects.TryGetCaptionButtonBounds(this, out Rect bounds)) return;
+
+        double barHeight = Math.Round(bounds.Bottom, 1);
+        TitleRow.Height = new GridLength(barHeight);
+        var chrome = System.Windows.Shell.WindowChrome.GetWindowChrome(this);
+        if (chrome != null && !chrome.IsFrozen) chrome.CaptionHeight = barHeight;
+
+        // Distance from the right edge of the title bar to the left edge of the native buttons
+        double rightOfBar = TitleBar.ActualWidth > 0 ? TitleBar.ActualWidth : ActualWidth - RootGrid.Margin.Left - RootGrid.Margin.Right;
+        double offset = Math.Max(0, rightOfBar - (bounds.Left - RootGrid.Margin.Left)) + 4;
+        ThemeToggleButton.VerticalAlignment = VerticalAlignment.Top;
+        ThemeToggleButton.Height = bounds.Height;
+        ThemeToggleButton.Margin = new Thickness(0, bounds.Top, offset, 0);
+    }
 
     private void MaximizeRestore_Click(object sender, RoutedEventArgs e) =>
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;

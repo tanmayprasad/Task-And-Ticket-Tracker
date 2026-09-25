@@ -14,6 +14,7 @@ namespace TaskTrackerApp.Theming;
 /// </summary>
 public static class WindowEffects
 {
+    private const int DWMWA_CAPTION_BUTTON_BOUNDS = 5;
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
     private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     private const int DWMWA_SYSTEMBACKDROP_TYPE = 38;
@@ -28,6 +29,32 @@ public static class WindowEffects
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS margins);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT { public int Left, Top, Right, Bottom; }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out RECT value, int size);
+
+    /// <summary>
+    /// The rectangle Windows uses for the native minimize/maximize/close buttons, in device-independent units and
+    /// relative to the window's top-left corner. Lets the app line its own title-bar controls up with them.
+    /// </summary>
+    public static bool TryGetCaptionButtonBounds(Window window, out Rect bounds)
+    {
+        bounds = Rect.Empty;
+        var hwnd = new WindowInteropHelper(window).Handle;
+        if (hwnd == IntPtr.Zero) return false;
+        try
+        {
+            if (DwmGetWindowAttribute(hwnd, DWMWA_CAPTION_BUTTON_BOUNDS, out var r, Marshal.SizeOf<RECT>()) != 0) return false;
+            if (r.Right <= r.Left || r.Bottom <= r.Top) return false;
+            var dpi = VisualTreeHelper.GetDpi(window);
+            bounds = new Rect(r.Left / dpi.DpiScaleX, r.Top / dpi.DpiScaleY, (r.Right - r.Left) / dpi.DpiScaleX, (r.Bottom - r.Top) / dpi.DpiScaleY);
+            return true;
+        }
+        catch { return false; }
+    }
 
     /// <summary>
     /// True once the window uses Mica. Windows then draws its own (native) caption buttons in the extended frame,

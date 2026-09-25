@@ -40,6 +40,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 - The check box and toggle-switch "on" colour referenced an undefined theme brush (`PrimaryColor`).
+- **Typed text was indented twice** in every text box (the placeholder and caret sat about 13 px left of the typed text). Placeholders are now drawn inside the text box itself, so they start exactly where typing starts.
+- **Title bar alignment:** the theme button, and the app icon and title, now line up with the native minimize / maximize / close buttons at any display scaling and when maximized.
+- Multi-line boxes (Description, Acceptance criteria) start at the top instead of centring their text.
+- The full-width new-task form no longer cuts off the *Top / Bottom* control; Start now, Add to, State and Priority stack vertically.
+- Consistent page margins and title position on Tasks, Settings, About and the full-width form.
+- The task form always opens scrolled to the top, and ticket / due / step chips in narrow cards wrap instead of being clipped.
 
 ### Added
 - **New in-app user guide** (About → *Open user guide*, or **F1** anywhere in the app). It is organised in cards: Quick start, Adding tasks, The task list, Staying focused, The desktop widget, Keyboard shortcuts, Minimize/close/tray, Reminders, Settings, and Your data. It is themed like the rest of the app.
