@@ -6,6 +6,7 @@
     Updates:
       * TaskTrackerApp.Packaging/AppxManifest.xml  (Identity Version - authoritative)
       * TaskTrackerApp/MainWindow.xaml             (About page "Version: ...")
+      * TaskTrackerApp/TaskTrackerApp.csproj       (<Version>; read at runtime for the "What's new" tour)
       * setup.iss                                  (AppVersion and installer file name)
       * PACKAGING_CONFIG.md                        ("currently ..." note)
 
@@ -51,6 +52,7 @@ function Update-File {
 
 Update-File 'TaskTrackerApp.Packaging\AppxManifest.xml' '(<Identity\b[^>]*?\bVersion=")[^"]+(")' ('${1}' + $Version + '${2}')
 Update-File 'TaskTrackerApp\MainWindow.xaml' '(Text="Version: )[^"]+(")' ('${1}' + $Version + '${2}')
+Update-File 'TaskTrackerApp\TaskTrackerApp.csproj' '(<Version>)[^<]+(</Version>)' ('${1}' + $Version + '${2}')
 Update-File 'setup.iss' '^(AppVersion=)[^\r\n]*' ('${1}' + $Version) -Optional
 Update-File 'setup.iss' '^(OutputBaseFilename=TaskTrackerApp-win-Setup-v)[^\r\n]*' ('${1}' + $Version) -Optional
 $note = if ($isDevBuild) { 'a development build' } else { 'the latest Store release' }

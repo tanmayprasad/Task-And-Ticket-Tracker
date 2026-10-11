@@ -249,13 +249,29 @@
                             <TextBlock Style="{StaticResource H2}" Text="Settings and themes"/>
                         </StackPanel>
                         <ItemsControl Style="{StaticResource Bullets}">
-                            <sys:String>Open Settings at the bottom of the navigation pane to change the active-task limit, reminders, the app theme (Use system setting, Dark or Light), and the widget style, theme, text size and opacity. Changes apply and save immediately.</sys:String>
-                            <sys:String>The sun/moon button in the title bar switches quickly between Dark and Light. The app follows your Windows accent colour, and uses the Mica material on Windows 11.</sys:String>
+                            <sys:String>Open Settings at the bottom of the navigation pane to change the app theme (Use system setting, Dark or Light), and the widget style, theme, text size and opacity. Changes apply and save immediately.</sys:String>
+                            <sys:String>The ? button in the title bar has a quick switch between Dark and Light. The app follows your Windows accent colour, and uses the Mica material on Windows 11.</sys:String>
                         </ItemsControl>
                     </StackPanel>
                 </Border>
 
-                <!-- 10. Data & privacy -->
+                <!-- 10. Profiles, import and export -->
+                <Border Style="{StaticResource Card}" Padding="22,18" Margin="0,0,0,12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource H2Icon}" Text="&#xE77B;"/>
+                            <TextBlock Style="{StaticResource H2}" Text="Profiles, import and export"/>
+                        </StackPanel>
+                        <ItemsControl Style="{StaticResource Bullets}">
+                            <sys:String>Profiles keep separate task lists, for example Work and Personal. Each profile has its own active-task limit and reminder settings; theme and widget settings are shared.</sys:String>
+                            <sys:String>Click the profile badge at the bottom of the navigation pane (above About) to open the Profiles page: switch, create, rename or delete profiles, set each profile's active-task limit and reminders, and import or export its tasks. A new profile starts with the focus settings of your newest profile.</sys:String>
+                            <sys:String>Reminders arrive for every profile, even one that isn't open, and name the profile they belong to. The widget shows the open profile.</sys:String>
+                            <sys:String>Export saves a profile's tasks as a JSON file (everything, for backups or another PC) or as a CSV spreadsheet for Excel. Import reads either format into any profile: add the tasks to the list (a task whose ticket number you already have is updated from the file instead of added twice) or replace the list. You can undo an import.</sys:String>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 11. Data & privacy -->
                 <Border Style="{StaticResource Card}" Padding="22,18" Margin="0,0,0,12">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal">
@@ -264,6 +280,7 @@
                         </StackPanel>
                         <ItemsControl Style="{StaticResource Bullets}">
                             <sys:String>Everything is stored on this device in %LOCALAPPDATA%\TaskTrackerApp. Nothing is sent over the network.</sys:String>
+                            <sys:String>Exported files are saved only where you choose. Deleting a profile keeps its task file in the data folder (profiles\.deleted).</sys:String>
                             <sys:String>Every save keeps the previous version as a backup. If the task file is ever damaged, the app restores the backup, keeps the damaged copy aside and tells you what happened.</sys:String>
                         </ItemsControl>
                     </StackPanel>
@@ -274,7 +291,7 @@
         <!-- Footer -->
         <Border Grid.Row="2" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderLight}" BorderThickness="0,1,0,0" Padding="32,14">
             <Grid>
-                <TextBlock Text="Tip: press F1 anywhere in the app to open this guide." Foreground="{DynamicResource TextMuted}" FontSize="12.5" VerticalAlignment="Center"/>
+                <TextBlock Text="Tip: press F1 anywhere in the app to open this guide, or replay the tour from the ? button in the title bar." Foreground="{DynamicResource TextMuted}" FontSize="12.5" VerticalAlignment="Center"/>
                 <Button Content="Close" Style="{StaticResource AccentButton}" Padding="22,5" HorizontalAlignment="Right" IsCancel="True" IsDefault="True" Click="Close_Click"/>
             </Grid>
         </Border>

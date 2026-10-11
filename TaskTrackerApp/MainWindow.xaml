@@ -44,23 +44,34 @@
             </tb:TaskbarIcon.ContextMenu>
         </tb:TaskbarIcon>
 
-        <!-- Title bar (Mica shows through). Double-click maximizes; the maximize button supports Snap Layouts. -->
+        <!-- Title bar: 40 DIP, Windows 11 compact (Mica shows through). The app draws its own caption buttons on
+             every Windows version (WindowEffects.Attach customCaption); the maximize button is reported to Windows as
+             HTMAXBUTTON so Snap Layouts still work. Double-click maximizes; the empty area drags the window. -->
         <Grid x:Name="TitleBar" Grid.Row="0">
+            <!-- The icon's centre (x = 24) lines up with the hamburger and the navigation icons below -->
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
                 <Image Source="pack://application:,,,/app.ico" Width="16" Height="16" RenderOptions.BitmapScalingMode="HighQuality"/>
-                <TextBlock Text="Task And Ticket Tracker" FontSize="12" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                <TextBlock Text="Task And Ticket Tracker" Style="{StaticResource TitleBarText}" Margin="12,0,0,0"/>
             </StackPanel>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" WindowChrome.IsHitTestVisibleInChrome="True">
-                <!-- Left of the caption buttons. With Mica, Windows draws the native caption buttons, so this
-                     gets a right margin in code (TitleBarActions) and the custom buttons below are hidden. -->
-                <Button x:Name="ThemeToggleButton" Style="{StaticResource IconButton}" Height="32" Margin="0,4,8,0" Click="ThemeToggle_Click"
-                        ToolTip="Switch between dark and light theme" AutomationProperties.Name="Toggle theme" WindowChrome.IsHitTestVisibleInChrome="True">
-                    <TextBlock x:Name="ThemeIconTextBlock" Text="&#xE706;" FontSize="14"/>
+
+            <!-- Help + caption buttons: one row of equal 46 x 40 buttons -->
+            <StackPanel x:Name="TitleBarButtons" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <Button x:Name="HelpButton" Content="&#xE897;" Style="{StaticResource CaptionButton}" FontSize="12" Click="HelpButton_Click"
+                        ToolTip="Help, tour and theme" AutomationProperties.Name="Help">
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem x:Name="ThemeMenuItem" Header="Switch to light theme" Click="ThemeToggle_Click"/>
+                            <Separator/>
+                            <MenuItem Header="Take the tour" Click="StartWelcomeTour_Click"/>
+                            <MenuItem Header="What's new in this version" Click="ShowWhatsNew_Click"/>
+                            <MenuItem Header="User guide" InputGestureText="F1" Click="ViewDocs_Click"/>
+                        </ContextMenu>
+                    </Button.ContextMenu>
                 </Button>
                 <StackPanel x:Name="CaptionButtonsPanel" Orientation="Horizontal">
-                <Button Content="&#xE921;" Style="{StaticResource CaptionButton}" Click="Minimize_Click" ToolTip="Minimize to the desktop widget" AutomationProperties.Name="Minimize"/>
-                <Button x:Name="MaximizeButton" Content="&#xE922;" Style="{StaticResource CaptionButton}" Click="MaximizeRestore_Click" ToolTip="Maximize" AutomationProperties.Name="Maximize"/>
-                <Button Content="&#xE8BB;" Style="{StaticResource CaptionCloseButton}" Click="Close_Click" ToolTip="Hide to tray (double-click the tray icon to reopen; Exit from its menu)" AutomationProperties.Name="Close to tray"/>
+                    <Button Content="&#xE921;" Style="{StaticResource CaptionButton}" Click="Minimize_Click" ToolTip="Minimize to the desktop widget" AutomationProperties.Name="Minimize"/>
+                    <Button x:Name="MaximizeButton" Content="&#xE922;" Style="{StaticResource CaptionButton}" Click="MaximizeRestore_Click" ToolTip="Maximize" AutomationProperties.Name="Maximize"/>
+                    <Button Content="&#xE8BB;" Style="{StaticResource CaptionCloseButton}" Click="Close_Click" ToolTip="Hide to tray (double-click the tray icon to reopen; Exit from its menu)" AutomationProperties.Name="Close to tray"/>
                 </StackPanel>
             </StackPanel>
         </Grid>
@@ -84,21 +95,32 @@
                             Click="ToggleSidebar_Click" ToolTip="Expand or collapse the navigation pane" AutomationProperties.Name="Toggle sidebar"/>
                     <RadioButton x:Name="NavTasks" Style="{StaticResource NavItem}" IsChecked="True" Checked="Nav_Changed" ToolTip="Tasks" AutomationProperties.Name="Tasks">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE9D5;" FontFamily="{StaticResource IconFont}" FontSize="16" Width="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#xE9D5;" FontFamily="{StaticResource IconFont}" FontSize="16" Width="20" TextAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Text="Tasks" VerticalAlignment="Center" Margin="14,0,0,0"/>
                         </StackPanel>
                     </RadioButton>
                 </StackPanel>
                 <StackPanel Grid.Row="2" Margin="0,0,0,8">
+                    <Border Height="1" Background="{DynamicResource DividerStroke}" Margin="12,4,12,6"/>
+                    <!-- Profiles page. The icon is the open profile's initial; the name shows when the pane is expanded -->
+                    <RadioButton x:Name="NavProfiles" Style="{StaticResource NavItem}" Checked="Nav_Changed" ToolTip="Profiles" AutomationProperties.Name="Profiles">
+                        <StackPanel Orientation="Horizontal">
+                            <Border Width="20" Height="20" CornerRadius="10" Background="{DynamicResource PrimaryBackground}" VerticalAlignment="Center">
+                                <TextBlock x:Name="ProfileInitialText" Text="D" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextOnAccent}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock x:Name="ProfileNameText" Text="Default" VerticalAlignment="Center" Margin="14,0,0,0" MaxWidth="150" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </RadioButton>
                     <RadioButton x:Name="NavAbout" Style="{StaticResource NavItem}" Checked="Nav_Changed" ToolTip="About" AutomationProperties.Name="About">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE946;" FontFamily="{StaticResource IconFont}" FontSize="16" Width="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#xE946;" FontFamily="{StaticResource IconFont}" FontSize="16" Width="20" TextAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Text="About" VerticalAlignment="Center" Margin="14,0,0,0"/>
                         </StackPanel>
                     </RadioButton>
                     <RadioButton x:Name="NavSettings" Style="{StaticResource NavItem}" Checked="Nav_Changed" ToolTip="Settings" AutomationProperties.Name="Settings">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE713;" FontFamily="{StaticResource IconFont}" FontSize="16" Width="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#xE713;" FontFamily="{StaticResource IconFont}" FontSize="16" Width="20" TextAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Text="Settings" VerticalAlignment="Center" Margin="14,0,0,0"/>
                         </StackPanel>
                     </RadioButton>
@@ -137,7 +159,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="Tasks" Style="{StaticResource TitleText}" VerticalAlignment="Center"/>
-                    <Button Grid.Column="1" Style="{StaticResource PrimaryButton}" Click="NewTaskButton_Click" ToolTip="New task (Ctrl+N)" AutomationProperties.Name="New task">
+                    <Button x:Name="NewTaskButton" Grid.Column="1" Style="{StaticResource PrimaryButton}" Click="NewTaskButton_Click" ToolTip="New task (Ctrl+N)" AutomationProperties.Name="New task">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock Text="New task" VerticalAlignment="Center"/>
@@ -146,14 +168,14 @@
                 </Grid>
                 
                 <!-- Quick add: type a title and press Enter -->
-                <Border Grid.Row="1" Margin="0,0,0,12" Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardStroke}" BorderThickness="1" CornerRadius="6">
+                <Border x:Name="QuickAddBox" Grid.Row="1" Margin="0,0,0,12" Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardStroke}" BorderThickness="1" CornerRadius="6">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}" FontSize="14" Foreground="{DynamicResource AccentText}" VerticalAlignment="Center" Margin="16,0,6,0"/>
-                        <TextBox x:Name="QuickAddTextBox" Grid.Column="1" Background="Transparent" BorderThickness="0" Padding="6,0" MinHeight="44" MaxLength="120"
+                        <TextBox x:Name="QuickAddTextBox" Grid.Column="1" Background="Transparent" BorderThickness="0" Padding="6,0" MinHeight="40" MaxLength="120"
                                  theming:TextBoxHelper.Placeholder="Add a task  (e.g. #123 Fix login)" theming:TextBoxHelper.AccentPlaceholder="True"
                                  PreviewKeyDown="QuickAddTextBox_PreviewKeyDown" AutomationProperties.Name="Quick add task"
                                  ToolTip="Enter: add to the list · Ctrl+Enter: open the full form · Start with #123 or AB-12 to set the ticket number"/>
@@ -161,7 +183,7 @@
                 </Border>
 
                 <!-- Filters -->
-                <Grid Grid.Row="2" Margin="0,0,0,15">
+                <Grid x:Name="FiltersRow" Grid.Row="2" Margin="0,0,0,15">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="10"/>
@@ -215,8 +237,13 @@
                             </DataGridTemplateColumn.CellStyle>
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Grid Background="Transparent" Cursor="SizeAll" ToolTip="Priority — drag the card to reorder">
-                                        <TextBlock x:Name="RankText" Text="{Binding Priority}" Foreground="{DynamicResource TextMuted}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <Grid Background="Transparent" Cursor="SizeAll" ToolTip="{Binding Priority}" ToolTipService.InitialShowDelay="400">
+                                        <Grid.Resources>
+                                            <Style TargetType="ToolTip" BasedOn="{StaticResource {x:Type ToolTip}}">
+                                                <Setter Property="ContentStringFormat" Value="Priority {0} overall · drag the card to reorder"/>
+                                            </Style>
+                                        </Grid.Resources>
+                                        <TextBlock x:Name="RankText" Text="{Binding ListPosition}" Foreground="{DynamicResource TextMuted}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         <TextBlock x:Name="GripText" Text="&#xE76F;" FontFamily="{StaticResource IconFont}" Foreground="{DynamicResource TextSecondary}" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
                                     </Grid>
                                     <DataTemplate.Triggers>
@@ -360,6 +387,8 @@
                     <TextBlock x:Name="EmptyStateTitle" Text="No tasks yet" Style="{StaticResource SubtitleText}" HorizontalAlignment="Center"/>
                     <TextBlock x:Name="EmptyStateHint" Text="Create a task to get started." Style="{StaticResource BodyText}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="300" Margin="0,8,0,18"/>
                     <Button x:Name="EmptyStateButton" Content="Create your first task" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Center" Click="EmptyStateButton_Click"/>
+                    <Button x:Name="EmptyStateTourButton" Content="Show me around" Style="{StaticResource SubtleButton}" Foreground="{DynamicResource AccentText}" HorizontalAlignment="Center" Margin="0,8,0,0"
+                            Click="StartWelcomeTour_Click" ToolTip="A one-minute tour of the app"/>
                 </StackPanel>
             </Grid>
             </Border>
@@ -622,7 +651,7 @@
                     <StackPanel>
                         <TextBlock Text="About" Style="{StaticResource TitleText}" Margin="0,0,0,20"/>
                         <TextBlock Text="Task And Ticket Tracker is a lightweight, context-aware productivity tool designed to help you stay focused on what matters." Foreground="{DynamicResource TextHighlight}" TextWrapping="Wrap" Margin="0,0,0,10" FontSize="14"/>
-                        <TextBlock Text="Version: 1.5.0.0" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,20"/>
+                        <TextBlock Text="Version: 1.6.0.0" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,20"/>
                         
                         <TextBlock Text="What it does" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,10"/>
                         <TextBlock Text="• Capture tasks in seconds with Quick add, steps and due-date shortcuts" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,6" TextWrapping="Wrap"/>
@@ -631,12 +660,16 @@
                         <TextBlock Text="• Due-date reminders that hide task details during Do Not Disturb" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,6" TextWrapping="Wrap"/>
                         <TextBlock Text="• Everything stays on this device, with automatic backups" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,20" TextWrapping="Wrap"/>
 
-                        <Button Width="200" Height="36" HorizontalAlignment="Left" Margin="0,0,0,20" Style="{StaticResource PrimaryButton}" Click="ViewDocs_Click" ToolTip="Open the user guide (F1)" AutomationProperties.Name="Open user guide">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE897;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <TextBlock Text="Open user guide" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
+                        <WrapPanel Margin="0,0,0,12">
+                            <Button Width="200" Height="36" Margin="0,0,8,8" Style="{StaticResource PrimaryButton}" Click="ViewDocs_Click" ToolTip="Open the user guide (F1)" AutomationProperties.Name="Open user guide">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE897;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Open user guide" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Content="Take the tour" Height="36" Margin="0,0,8,8" Style="{StaticResource StandardButton}" Click="StartWelcomeTour_Click" ToolTip="A one-minute tour of the app"/>
+                            <Button Content="What's new" Height="36" Margin="0,0,8,8" Style="{StaticResource StandardButton}" Click="ShowWhatsNew_Click" ToolTip="Highlights of this version"/>
+                        </WrapPanel>
                         
                         <TextBlock Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,10,0,0">
                             All data stays on this device.
@@ -646,13 +679,50 @@
                     </StackPanel>
                 </Grid>
             
-            <!-- Settings Tab Content: Windows 11 Settings-style rows; every change applies instantly -->
-            <Grid x:Name="SettingsTabContent" Visibility="Collapsed">
+            <!-- Profiles page: everything that belongs to a profile. Dynamic parts are filled by BuildProfilesPage (MainWindow.Profiles.cs) -->
+            <Grid x:Name="ProfilesTabContent" Visibility="Collapsed">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="28,10,28,36" MaxWidth="1000" HorizontalAlignment="Left">
-                    <TextBlock Text="Settings" Style="{StaticResource TitleText}" Margin="0,0,0,24"/>
+                    <Grid>
+                    <StackPanel Margin="28,10,28,36" MaxWidth="1056" HorizontalAlignment="Stretch">
+                    <TextBlock Text="Profiles" Style="{StaticResource TitleText}" Margin="0,0,0,6"/>
+                    <TextBlock Text="Keep separate task lists, such as Work and Personal. Each profile has its own tasks, active-task limit and reminders. Reminders arrive for every profile, even when it isn't open."
+                               Style="{StaticResource BodyText}" Margin="0,0,0,20"/>
 
-                    <TextBlock Text="Focus" Style="{StaticResource BodyStrongText}" Margin="0,0,0,8"/>
+                    <!-- Current profile -->
+                    <Border Style="{StaticResource Card}" Padding="20,18">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Width="56" Height="56" CornerRadius="28" Background="{DynamicResource PrimaryBackground}" VerticalAlignment="Center">
+                                <TextBlock x:Name="CurrentProfileInitial" Text="D" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource TextOnAccent}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0,16,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="CurrentProfileName" Text="Default" Style="{StaticResource SubtitleText}" TextTrimming="CharacterEllipsis" MaxWidth="420"/>
+                                    <Border Style="{StaticResource Chip}" Background="{DynamicResource SuccessBackground}" BorderThickness="0" Margin="12,0,0,0" Padding="8,2" VerticalAlignment="Center">
+                                        <TextBlock Text="Open now" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SuccessColor}"/>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock x:Name="CurrentProfileStats" Style="{StaticResource BodyText}" Margin="0,6,0,0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="Rename" Style="{StaticResource StandardButton}" Margin="0,0,8,0" Click="RenameCurrentProfile_Click"/>
+                                <Button x:Name="CurrentProfileMoreButton" Content="&#xE712;" Style="{StaticResource IconButton}" Click="CurrentProfileMore_Click"
+                                        ToolTip="More options" AutomationProperties.Name="More options for the open profile"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- All profiles: one card each, then a "New profile" card -->
+                    <TextBlock Text="All profiles" Style="{StaticResource BodyStrongText}" Margin="0,28,0,8"/>
+                    <WrapPanel x:Name="ProfileCards"/>
+
+                    <!-- Focus and reminders of the open profile -->
+                    <TextBlock x:Name="ProfileSettingsCaption" Text="Focus and reminders" Style="{StaticResource BodyStrongText}" Margin="0,20,0,8"/>
                     <Border Style="{StaticResource SettingRow}">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -673,7 +743,6 @@
                             </Grid>
                         </Grid>
                     </Border>
-                    <TextBlock Text="Reminders" Style="{StaticResource BodyStrongText}" Margin="0,20,0,8"/>
                     <Border Style="{StaticResource SettingRow}">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -704,7 +773,7 @@
                                 <TextBlock Text="How long before the due date the reminder appears." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
                             </StackPanel>
                             <Grid Grid.Column="2" VerticalAlignment="Center">
-                                <ComboBox x:Name="AlertTimerComboBox" Width="150" SelectionChanged="AlertTimerComboBox_SelectionChanged" AutomationProperties.Name="Remind me"
+                                <ComboBox x:Name="AlertTimerComboBox" Width="190" SelectionChanged="AlertTimerComboBox_SelectionChanged" AutomationProperties.Name="Remind me"
                                           IsEnabled="{Binding IsChecked, ElementName=NotificationsToggle}">
                                     <ComboBoxItem Content="At the due time" Tag="0"/>
                                     <ComboBoxItem Content="30 minutes before" Tag="0.5"/>
@@ -717,6 +786,71 @@
                                     <ComboBoxItem Content="2 days before" Tag="48"/>
                                 </ComboBox>
                             </Grid>
+                        </Grid>
+                    </Border>
+
+                    <!-- Import and export for the open profile -->
+                    <TextBlock Text="Import and export" Style="{StaticResource BodyStrongText}" Margin="0,20,0,8"/>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE898;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Export tasks" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock x:Name="ExportDescText" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="JSON" Style="{StaticResource StandardButton}" MinWidth="72" Margin="0,0,8,0" Click="ExportJson_Click" ToolTip="Everything, for backups or another PC" AutomationProperties.Name="Export as JSON"/>
+                                <Button Content="CSV" Style="{StaticResource StandardButton}" MinWidth="72" Click="ExportCsv_Click" ToolTip="A spreadsheet for Excel" AutomationProperties.Name="Export as CSV"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE896;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Import tasks" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock x:Name="ImportDescText" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Button Grid.Column="2" Content="Choose file…" Style="{StaticResource StandardButton}" VerticalAlignment="Center" Click="ImportCurrent_Click" AutomationProperties.Name="Import tasks"/>
+                        </Grid>
+                    </Border>
+                    </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Settings Tab Content: Windows 11 Settings-style rows; every change applies instantly -->
+            <Grid x:Name="SettingsTabContent" Visibility="Collapsed">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <!-- Cards fill the page up to 1000 DIP (+ margins); on wider windows the column is centred -->
+                    <Grid>
+                    <StackPanel Margin="28,10,28,36" MaxWidth="1056" HorizontalAlignment="Stretch">
+                    <TextBlock Text="Settings" Style="{StaticResource TitleText}" Margin="0,0,0,24"/>
+
+                    <TextBlock Text="Profiles" Style="{StaticResource BodyStrongText}" Margin="0,0,0,8"/>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE77B;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Task lists, focus and reminders" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock Text="The active-task limit and reminder settings belong to each profile. Switch, create, import and export there." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Button Grid.Column="2" Content="Manage profiles" Style="{StaticResource StandardButton}" VerticalAlignment="Center" Click="ManageProfiles_Click"/>
                         </Grid>
                     </Border>
                     <TextBlock Text="Appearance" Style="{StaticResource BodyStrongText}" Margin="0,20,0,8"/>
@@ -876,6 +1010,7 @@
                     </Border>
                     <TextBlock Text="Changes are saved automatically." Style="{StaticResource CaptionText}" Margin="4,16,0,0"/>
                     </StackPanel>
+                    </Grid>
                 </ScrollViewer>
             </Grid>
         </Grid>

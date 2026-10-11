@@ -4,12 +4,55 @@ All notable changes to the **Task and Ticket Tracker** project will be documente
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to the specific versioning rules defined in `PACKAGING_CONFIG.md`.
 
+## [1.6.0.0] - 2026-10-11
+
+### Store release notes
+- New to the app, or just updated? A one-minute guided tour now shows how everything works: Quick add, active (★) tasks, the desktop widget, and what minimize and close do.
+- After each update, a short "What's new" tour points out the new features right where they are.
+- A new ? button replays the tour, shows what's new and opens the user guide.
+- Profiles: keep separate task lists, for example Work and Personal, each with its own active-task limit and reminders. Reminders arrive for every profile.
+- Export a profile's tasks to a file (JSON, or CSV for Excel) and import them into any profile.
+- The edge-docked widget keeps its ticket tab attached while it slides in and out, and hides sooner after you move away.
+
+### Added
+- **Profiles** (`Data/ProfileStore.cs`, `Models/ProfileModel.cs`, `MainWindow.Profiles.cs`). Each profile has its own tasks and its own *Focus* and *Reminders* settings (active-task limit, reminders on/off, "Remind me"). Appearance and widget settings stay shared.
+  - Existing tasks become the **Default** profile on first launch; `tasks.json` is not moved. New profiles live in `profiles\<id>\` and copy the focus settings of the most recently created profile.
+  - Switch, create, import and export from the **Profiles page** (the letter badge at the bottom of the navigation pane): the open profile with its stats, a card per profile with *Switch*, the profile's focus and reminder settings, and import / export; rename and delete in **Settings → Profiles**. Deleting moves the task file to `profiles\.deleted\` (the last profile can't be deleted).
+  - **Reminders cover every profile**, not just the open one; with more than one profile, each reminder names its profile.
+- **Import / export per profile** (`Data/TaskTransfer.cs`). Export as **JSON** (everything, for backups or another PC) or **CSV** (Excel; steps in one cell as `[x]` / `[ ]` lines). Import JSON exports, a raw `tasks.json`, or CSV with a *Title* column; choose *Add to list* or *Replace list*, with **Undo**. Imported tasks respect the profile's active-task limit.
+- Themed dialogs for prompts and confirmations (`Dialogs/`).
+- Tour: a "Separate lists with profiles" step, and a "What's new" entry for profiles and import/export.
+
+### Changed
+- **Title bar redesigned**: a compact 40 px bar with the app's own minimize / maximize / close buttons (Snap Layouts still work on hover), the profile picker moved to the navigation pane, and the `?` button sized and spaced like the caption buttons. The theme switch moved into the `?` menu. Fixes the theme button overlapping minimize at high display scaling.
+- **Task list numbers** now show the visible order (1, 2, 3 …) instead of the overall priority, which also counted hidden Done tasks; the overall priority is in the tooltip.
+- **Import → Add to list:** a task whose ticket number is already in the profile is **updated** from the file (title, notes, due date, state, steps) instead of being added twice; the result shows added / updated / unchanged counts.
+- **Import into an empty profile:** the dialog offers just *Import* / *Cancel*; *Add to list* / *Replace list* appear only when the profile already has tasks.
+- **Settings:** now only app-wide options (appearance, desktop widget); the active-task limit and reminders moved to the Profiles page. The column is centred on wide windows, and "Remind me" values are no longer cut off. The Quick add box is a little slimmer.
+- **Navigation pane:** all icons share one centre line with the title-bar icon, a divider separates the bottom group, and the profile badge is no longer clipped.
+- **Edge-docked widget:** the ticket tab is now part of the widget. It stays attached to the card's inner side when the widget slides out, instead of disappearing while the card fades in, and the ticket number is shown only on the tab while docked. Clicking the tab opens the task.
+
+## [1.5.0.1] - Development build
+> Development build: getting-started and "What's new" tours, ? help menu, shorter edge-dock hide delay.
+
+### Added
+- **Getting-started tour** (`Onboarding/`). It spotlights the real controls: Quick add, New task, the list and ★, filters, minimize/close (including the three widget styles and where to choose them), and Settings. On the last card you can add a **practice task** (`#START`) whose steps walk you through star → minimize → tick a step on the widget.
+  - It is shown once to **everyone**: new users on first launch, and existing users on their first update to this version (with a "Welcome back" first card). Their tasks are untouched.
+  - Keyboard: → or Enter for next, ← for back, Esc to skip. It follows the app theme and accent, and Windows animation settings.
+- **"What's new" tour**: after an update, the steps of every release since the version last seen are shown once, using the same tour engine. Releases add their entries in `Onboarding/Tours.cs`.
+- **? help button** in the title bar: *Take the tour* · *What's new in this version* · *User guide (F1)*. The About page has *Take the tour* and *What's new* buttons, and the empty task list offers *Show me around*.
+
+### Changed
+- The edge-docked widget now slides away 0.3 s after the mouse leaves (was 0.7 s).
+- `TaskTrackerApp.csproj` now carries the app `<Version>` (set by `scripts/Set-Version.ps1`, checked by `scripts/Test-ReleaseVersion.ps1`). The release check also warns when a Store release has no "What's new" entry.
+
 ## [1.5.0.0] - 2026-09-25
 
 ### Store release notes
 - A fresh Windows 11 look: Mica window, your Windows accent colour, a navigation pane, and tasks shown as cards.
 - Choose how your active task is shown: a floating widget, a tab docked to the screen edge, or a strip on the taskbar.
 - Add tasks in seconds with Quick add, Save & new, "Start now" and Today / Tomorrow / Next week due dates.
+- Ticket numbers now lead every task in the list and become the heading when you open a task. The navigation pane starts collapsed to give your tasks more room.
 - Paste a list to create steps, and see due dates and step progress right in the task list.
 - Delete with Undo, a warning before unsaved changes are lost, and keyboard shortcuts. Press F1 for the new user guide.
 - The widget no longer takes keyboard focus, and closing the window keeps the app running in the tray.

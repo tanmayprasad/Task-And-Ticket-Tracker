@@ -121,6 +121,7 @@ public partial class WidgetView : Window, IWidgetPresenter
         ActiveVstsTextBlock.Foreground = Freeze(new SolidColorBrush(accent));
         VstsBadgeButton.Background = Freeze(new SolidColorBrush(Color.FromArgb(0x2E, accent.R, accent.G, accent.B)));
         DockTab.Background = Freeze(new SolidColorBrush(accent));
+        DockTab.BorderBrush = MainBorder.BorderBrush;
         DockTabText.Foreground = Freeze(new SolidColorBrush(Theming.AccentMath.BestTextOn(accent)));
 
         // Chevrons follow the text colour
@@ -216,17 +217,26 @@ public partial class WidgetView : Window, IWidgetPresenter
 
     public void ResetPosition() => CenterWindow();
 
+    private const double DockTabSize = 14;
+
+    /// <summary>
+    /// While docked, the accent tab with the ticket number is attached to the card's inner side (the side that stays
+    /// on screen when collapsed) in both states, so collapsing and expanding just slides one piece. The tab side of the
+    /// card is squared off and borderless so the two read as a single shape. Undocked: plain card, no tab.
+    /// </summary>
     private void UpdateDockVisuals()
     {
-        var edge = _dock?.Edge;
-        if (_dock?.IsCollapsed != true || edge == null)
+        if (_dock?.Edge is not DockEdge edge)
         {
             DockTab.Visibility = Visibility.Collapsed;
-            MainBorder.Opacity = 1;
+            MainBorder.Margin = new Thickness(0);
+            MainBorder.CornerRadius = new CornerRadius(8);
+            MainBorder.BorderThickness = new Thickness(1);
+            UpdateTicketBadge();
             return;
         }
 
-        // The tab sits on the side of the window that stays on screen
+        const double r = 8;
         bool vertical = edge is DockEdge.Left or DockEdge.Right;
         DockTab.HorizontalAlignment = edge switch
         {
@@ -240,13 +250,30 @@ public partial class WidgetView : Window, IWidgetPresenter
             DockEdge.Top => VerticalAlignment.Bottom,
             _ => VerticalAlignment.Stretch,
         };
-        DockTab.Width = vertical ? 14 : double.NaN;
-        DockTab.Height = vertical ? double.NaN : 14;
+        DockTab.Width = vertical ? DockTabSize : double.NaN;
+        DockTab.Height = vertical ? double.NaN : DockTabSize;
         DockTabText.LayoutTransform = vertical ? new RotateTransform(edge == DockEdge.Left ? 90 : -90) : Transform.Identity;
 
-        MainBorder.Opacity = 0;
+        // (left, top, right, bottom) of the tab side, per edge
+        (DockTab.CornerRadius, MainBorder.CornerRadius, DockTab.BorderThickness, MainBorder.BorderThickness, MainBorder.Margin) = edge switch
+        {
+            DockEdge.Right => (new CornerRadius(r, 0, 0, r), new CornerRadius(0, r, r, 0), new Thickness(1, 1, 0, 1), new Thickness(0, 1, 1, 1), new Thickness(DockTabSize, 0, 0, 0)),
+            DockEdge.Left => (new CornerRadius(0, r, r, 0), new CornerRadius(r, 0, 0, r), new Thickness(0, 1, 1, 1), new Thickness(1, 1, 0, 1), new Thickness(0, 0, DockTabSize, 0)),
+            DockEdge.Bottom => (new CornerRadius(r, r, 0, 0), new CornerRadius(0, 0, r, r), new Thickness(1, 1, 1, 0), new Thickness(1, 0, 1, 1), new Thickness(0, DockTabSize, 0, 0)),
+            _ => (new CornerRadius(0, 0, r, r), new CornerRadius(r, r, 0, 0), new Thickness(1, 0, 1, 1), new Thickness(1, 1, 1, 0), new Thickness(0, 0, 0, DockTabSize)),
+        };
+
         DockTab.Visibility = Visibility.Visible;
+        UpdateTicketBadge();
     }
+
+    /// <summary>The header ticket badge; hidden while docked because the tab already shows the ticket.</summary>
+    private void UpdateTicketBadge() =>
+        VstsBadgeButton.Visibility = _dock?.Edge == null && !string.IsNullOrEmpty(ActiveVstsTextBlock.Text)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+    private void DockTab_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) => VstsBadgeButton_Click(sender, e);
 
     protected override void OnClosed(EventArgs e)
     {
@@ -262,13 +289,12 @@ public partial class WidgetView : Window, IWidgetPresenter
             if (!string.IsNullOrWhiteSpace(currentTask.VstsNumber))
             {
                 ActiveVstsTextBlock.Text = $"#{currentTask.VstsNumber}";
-                VstsBadgeButton.Visibility = Visibility.Visible;
             }
             else
             {
                 ActiveVstsTextBlock.Text = "";
-                VstsBadgeButton.Visibility = Visibility.Collapsed;
             }
+            UpdateTicketBadge();
             
             ActiveTaskTextBlock.Text = currentTask.Title;
             DockTabText.Text = string.IsNullOrWhiteSpace(currentTask.VstsNumber) ? "•" : WidgetText.TicketLabel(currentTask);

@@ -11,6 +11,10 @@ public class TaskModel
     public string AcceptanceCriteria { get; set; } = string.Empty;
     public string State { get; set; } = "To Do"; // "To Do", "Doing", "Done"
     public int Priority { get; set; } = 1;
+
+    /// <summary>Position in the list as currently shown (1…n after filters). Display only, never saved.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public int ListPosition { get; set; }
     public DateTime? TargetDate { get; set; }
     public bool IsActive { get; set; }
     

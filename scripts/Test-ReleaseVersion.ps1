@@ -8,8 +8,10 @@
         development builds such as 1.4.3.5 must never be submitted),
       * TaskTrackerApp.Packaging/AppxManifest.xml has exactly this Identity Version,
       * the About page (TaskTrackerApp/MainWindow.xaml) shows "Version: <version>",
+      * TaskTrackerApp/TaskTrackerApp.csproj has <Version><version></Version>,
       * CHANGELOG.md has a "## [<version>]" section that is no longer marked "In Development".
-    setup.iss (legacy installer) is only checked with a warning.
+    setup.iss (legacy installer) is only checked with a warning, as is a release with no "What's new"
+    entry in TaskTrackerApp/Onboarding/Tours.cs since the previous Store release.
 
     Use -AllowDevBuild to validate a development build locally.
     Works on Windows PowerShell 5.1 and PowerShell 7; emits GitHub Actions annotations.
@@ -53,12 +55,29 @@ if ($about -and $about -notmatch [regex]::Escape("Text=""Version: $Version""")) 
     $errors.Add("The About page (MainWindow.xaml) does not show 'Version: $Version'.")
 }
 
+$project = Read-Text 'TaskTrackerApp\TaskTrackerApp.csproj'
+if ($project -and $project -notmatch ('<Version>' + [regex]::Escape($Version) + '</Version>')) {
+    $errors.Add("TaskTrackerApp.csproj does not have <Version>$Version</Version>. Run scripts/Set-Version.ps1 -Version $Version.")
+}
+
 $changelog = Read-Text 'CHANGELOG.md'
 if ($changelog) {
     $header = [regex]::Match($changelog, '(?m)^## \[' + [regex]::Escape($Version) + '\].*$')
     if (-not $header.Success) { $errors.Add("CHANGELOG.md has no '## [$Version]' section.") }
     elseif (-not $AllowDevBuild -and $header.Value -match 'In Development') {
         $errors.Add("CHANGELOG.md still marks $Version as 'In Development'. Give it a release date (scripts/Set-Version.ps1 -Release does this).")
+    }
+}
+
+# "What's new" tour: at least one Release("x.y.z.w", ...) entry newer than the previous Store release (x.y.z.0 in the changelog)
+$tours = Read-Text 'TaskTrackerApp\Onboarding\Tours.cs'
+if ($tours -and $changelog -and $Version -match '^\d+\.\d+\.\d+\.\d+$') {
+    $current = [version]$Version
+    $previous = [regex]::Matches($changelog, '(?m)^## \[(\d+\.\d+\.\d+\.0)\] - \d{4}-\d{2}-\d{2}') |
+        ForEach-Object { [version]$_.Groups[1].Value } | Where-Object { $_ -lt $current } | Sort-Object -Descending | Select-Object -First 1
+    $entries = [regex]::Matches($tours, 'Release\("(\d+\.\d+\.\d+\.\d+)"') | ForEach-Object { [version]$_.Groups[1].Value }
+    if ($previous -and -not ($entries | Where-Object { $_ -gt $previous -and $_ -le $current })) {
+        $warnings.Add("No 'What's new' tour entry for $Version (Release(...) in TaskTrackerApp/Onboarding/Tours.cs newer than $previous). Users will not see the highlights in the app.")
     }
 }
 

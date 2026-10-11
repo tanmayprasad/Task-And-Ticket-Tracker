@@ -11,6 +11,8 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
     <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
     <EnableDefaultAppxManifest>false</EnableDefaultAppxManifest>
+    <!-- Set by scripts/Set-Version.ps1; the app reads it at runtime (AppVersion.Current) -->
+    <Version>1.6.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

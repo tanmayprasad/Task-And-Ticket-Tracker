@@ -106,9 +106,15 @@ Tasks_v1/
 │  ├─ Data/TaskRepository.cs            tasks.json load/save with recovery
 │  ├─ Data/SettingsManager.cs           settings.json load/save
 │  ├─ Data/SafeFile.cs                  Atomic write + .bak + quarantine helpers
+│  ├─ Data/ProfileStore.cs              profiles.json: profiles, active profile, per-profile folders (§5.4)
+│  ├─ Data/TaskTransfer.cs              Per-profile import / export (JSON, CSV), merge, active cap
+│  ├─ MainWindow.Profiles.cs            Profile switching, profile picker/menu, Settings → Profiles, import/export UI
+│  ├─ Dialogs/                          Themed ChoiceDialog (message box) and TextPromptDialog
 │  ├─ Converters.cs                     TaskFormat (due text/urgency, step progress) + list/form converters
 │  ├─ Themes/Controls.xaml              Fluent control styles + type ramp (shared by all windows)
 │  ├─ Theming/                          AccentService + AccentMath, WindowEffects (Mica), Motion
+│  ├─ Onboarding/                       Getting-started + "What's new" tours (§7.5): overlay, steps, scheduler, layout
+│  ├─ AppVersion.cs                     Running version (csproj <Version>)
 │  ├─ TaskInput.cs                      Quick-add parsing, pasted-step splitting, next auto ticket, next-week date
 │  ├─ Widgets/IWidgetPresenter.cs       Interface MainWindow uses for any widget style
 │  ├─ Widgets/WidgetText.cs             "#ticket · step/name" formatting
@@ -168,7 +174,7 @@ flowchart LR
 1. `App.OnStartup` acquires the mutex; if another instance exists, it shuts down.
 2. The theme is applied from `settings.json`.
 3. The `MainWindow` constructor creates the engines, starts `ContextAwareEngine.StartMonitoring()`, restores the details-panel maximize state and calls `LoadTasks()`. That call shows a warning dialog if the task file had to be recovered, migrates the legacy state `"Doing"` to `"In progress"`, enforces the active-task rules and pushes the tasks to `NotificationService`.
-4. `Loaded` → `TrimMemory()`.
+4. `Loaded` → `TrimMemory()`, then (at `ApplicationIdle`) `RunStartupTour()`, which shows the welcome or "What's new" tour once (§7.5).
 
 **Minimize → widget:** `Window_StateChanged(Minimized)` hides the manager and calls `EnsureWidget(settings)`. That returns the presenter for `WidgetMode`, recreating it if the style changed (and falling back to Floating when the taskbar strip is unsupported). The manager then applies the settings, passes the active tasks and shows it. Saving Settings with a new style swaps the presenter immediately.
 
@@ -192,7 +198,10 @@ All data lives in **`%LOCALAPPDATA%\TaskTrackerApp\`** as indented JSON (`System
 
 | File | Purpose |
 |---|---|
-| `tasks.json` | Current task list |
+| `profiles.json` / `.bak` | Profiles, their focus settings and the open profile (§5.4) |
+| `tasks.json` | Task list of the **Default** (first) profile |
+| `profiles\<id>\tasks.json` | Task list of every later profile |
+| `profiles\.deleted\<name>-<timestamp>\` | Task files of deleted profiles (never erased) |
 | `tasks.json.bak` | Previous version, refreshed on every save |
 | `tasks.corrupt-<yyyyMMdd-HHmmss>.json` | Unreadable file moved aside during recovery. Never overwritten. |
 | `settings.json` / `settings.json.bak` | Settings and their previous version |
@@ -231,6 +240,19 @@ All data lives in **`%LOCALAPPDATA%\TaskTrackerApp\`** as indented JSON (`System
 | `DockEdge` | `null` | Drag widget to an edge | `Left` · `Top` · `Right` · `Bottom`; `null` = not docked. Set to `Right` when Edge-docked is first chosen. |
 | `WidgetLeft` / `WidgetTop` | `null` | Drag widget | `null` = centered. Always the **expanded** position; saved once per drag/resize. |
 | `IsDetailsMaximized` | `false` | Details ⛶ button | — |
+| `OnboardingCompleted` | `false` | — (set when the welcome tour is shown) | — |
+| `LastSeenVersion` | `null` | — (set at startup) | Newest app version whose tour was shown; never moves backwards. `null` = updated from 1.5.0.0 or earlier |
+
+### 5.4 Profiles — `profiles.json` (`ProfileStore`, `ProfileModel`)
+- `{ ActiveProfileId, Profiles: [ { Id, Name, CreatedAt, Folder, MaxActiveTasks, NotificationsEnabled, AlertTimerHours } ] }`. `Folder` is relative to the data folder; `""` = the data folder itself.
+- **Migration:** when `profiles.json` is missing, a **Default** profile is created on the existing root `tasks.json` (nothing is moved, so older versions still find the data). Its focus settings are seeded from `settings.json`; from then on `SettingsModel.MaxActiveTasks` / `NotificationsEnabled` / `AlertTimerHours` are only migration seeds.
+- **Per profile:** tasks plus the *Focus* and *Reminders* settings. Shared: theme, widget style and appearance, window state, tour state.
+- **New profile:** `profiles\<id>\`; focus settings copied from the profile with the newest `CreatedAt`. Names: 1–40 characters, unique (case-insensitive).
+- **Delete:** never the last profile; the active one switches to the first remaining profile. `tasks.json`/`.bak` are moved to `profiles\.deleted\<name>-<timestamp>\`.
+- **Corrupt `profiles.json`:** quarantined, `.bak` is used; if both fail, a new Default is created on the root `tasks.json`.
+- **Import / export** (`TaskTransfer`): JSON envelope `{ format: "TaskAndTicketTracker", version: 1, profile, exportedAt, tasks }` (a bare task array such as `tasks.json` also imports); CSV columns `Ticket, Title, State, Priority, Active, Due, Description, Acceptance criteria, Steps` (UTF-8 BOM, RFC 4180, steps as `[x]`/`[ ]` lines, all-day due = date only). Import normalizes state, cuts texts to the form limits, on *Add* **updates** a task that is already in the list (same Id, else same ticket number, else, without a ticket, same title) in place: title, notes, due date, state and steps from the file, Id / ticket / position kept, deactivated unless In progress; a ticket repeated in the file is skipped after its first row. It re-ids tasks whose Id exists in another profile, and caps active tasks at the profile's limit. *Add* or *Replace*, with Undo.
+
+Covered by `ProfileStoreTests` and `TaskTransferTests`.
 
 ### 5.3 Data-safety guarantees (`Data/SafeFile.cs`, `Data/TaskRepository.cs`)
 
@@ -279,13 +301,15 @@ Covered by `TaskTrackerApp.Tests/TaskRepositoryTests.cs`. `TaskRepository(string
 ### 7.1 Manager window (`MainWindow.xaml`)
 - **Window chrome** (`Theming/WindowEffects`):
   - On Windows 11 22H2+ the window uses the **Mica** backdrop (`DWMWA_SYSTEMBACKDROP_TYPE`), rounded corners, and a dark-mode title bar that follows the theme.
-  - Extending the frame makes Windows draw the **native caption buttons**, so the custom ones are hidden; native buttons include Snap Layouts.
-  - On Windows 10 the solid background and the custom min/max/close buttons are used, with a `WM_NCHITTEST` → `HTMAXBUTTON` hook for maximize.
-  - The 40 px title bar holds the app icon and name, and the theme toggle (sun/moon).
+  - **40 DIP title bar** with the app's **own caption buttons** on every Windows version: `WindowEffects.Attach(this, customCaption: true)` keeps Mica but removes `WS_SYSMENU`, so DWM doesn't draw its native buttons in the extended frame. Snap Layouts work through the `WM_NCHITTEST` → `HTMAXBUTTON` hook on the maximize button; Alt+Space opens the system menu through `WindowEffects.ShowSystemMenu`; Alt+F4 and the taskbar menu are unaffected.
+  - Left: app icon (centred over the navigation column), and title. Right: `?` (Help menu: theme switch, tour, what's new, user guide), then minimize / maximize / close, all 46 × 40 (`CaptionButton`). Title text and caption glyphs dim while the window is inactive.
+  - Dialogs and the user guide keep the native caption buttons (`Attach(window)`).
   - Minimize (—) goes to the widget; close (✕) goes to the tray only (no widget). Quit via tray → Exit.
 - **Navigation pane:**
   - Windows 11 NavigationView style, 220 px (icon + label) or 48 px compact. **It starts collapsed** (`SidebarColumnDef` = 48) on every launch; ☰ (`ToggleSidebar_Click`) expands it. There is no width-based auto behaviour.
   - Items: Tasks (top), About and Settings (bottom), all `NavItem` radio buttons with an animated accent pill.
+  - **Profiles** (`NavProfiles`, a `NavItem`) above About, after a divider: an accent badge with the open profile's initial; the name shows when the pane is expanded. All nav icons are centred at x = 24 (`NavItem` content margin 10), like the hamburger and the title-bar icon.
+- **Profiles page** (`ProfilesTabContent`, filled by `BuildProfilesPage` in `MainWindow.Profiles.cs`): the open profile (avatar, name, stats, Rename, ⋯ Delete), a card per profile (Switch or "Open now", ⋯ Rename / Import / Export JSON / Export CSV / Delete) plus a dashed *New profile* card, the open profile's **Focus and reminders** rows, and **Import and export** (JSON / CSV buttons, Choose file…). Settings keeps only app-wide options and a *Manage profiles* row; "Change limit" snackbars open the Profiles page.
   - Pages sit on a rounded, translucent **content layer** (`LayerBackground`).
   - All icon buttons have tooltips and `AutomationProperties.Name`.
 - **Tasks tab:**
@@ -338,7 +362,7 @@ All styles use non-activating windows (`WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW`, `S
 | Style | Behaviour | Implementation |
 |---|---|---|
 | **Floating** (`WidgetRole.Floating`) | Stays where it is dragged. The position is clamped on screen at load. | `WidgetView` |
-| **Edge-docked** (`WidgetRole.EdgeDocked`) | After a drag ends within 48 px (×DPI) of an **outer** work-area edge, it snaps flush to that edge. 0.7 s after the mouse leaves, it slides out (180 ms ease-out), leaving a 14 px accent tab plus the 8 px shadow margin visible. The tab shows the ticket number and has a detail tooltip. Hovering over the tab slides the widget back. Dragging away undocks. | `EdgeDockController` + `DockMath`. An edge is "outer" only when `MonitorFromPoint` finds no monitor 1 px beyond it, which excludes edges shared between monitors and the taskbar edge. `DisplaySettingsChanged` triggers re-validation. |
+| **Edge-docked** (`WidgetRole.EdgeDocked`) | After a drag ends within 48 px (×DPI) of an **outer** work-area edge, it snaps flush to that edge. 0.3 s after the mouse leaves, it slides out (180 ms ease-out), leaving a 14 px accent tab plus the 8 px shadow margin visible. While docked the tab is **always attached to the card's inner side** (collapsed and expanded), sharing the card's shadow and border so the two slide as one piece; the ticket number is shown only on the tab (the header badge is hidden), and clicking the tab opens the task. Hovering over the tab slides the widget back. Dragging away undocks. | `EdgeDockController` + `DockMath`. An edge is "outer" only when `MonitorFromPoint` finds no monitor 1 px beyond it, which excludes edges shared between monitors and the taskbar edge. `DisplaySettingsChanged` triggers re-validation. |
 | **Taskbar strip** (experimental) | A 260 DIP × (taskbar height − 8) pill, right-aligned 8 px left of `TrayNotifyWnd`. Text is `WidgetText.CompactText` (`#ticket · open step`, else `#ticket · title`). On hover: ✓ (complete current step, or the task if it has no open steps) and ‹ › (cycle active tasks; the mouse wheel also cycles). Click opens a flyout `WidgetView` bottom-aligned 6 px above the taskbar; it closes after 1 s away or on a second click. | `TaskbarStripView` + `TaskbarLocator`. A 1 s timer re-asserts `HWND_TOPMOST`, re-positions the strip, and hides it while the taskbar is auto-hidden or a visible, uncloaked, non-shell foreground window covers the whole monitor. It is unsupported with a vertical taskbar (falls back to Floating with a one-time balloon). |
 
 ### 7.3 System tray (`H.NotifyIcon`)
@@ -347,6 +371,18 @@ All styles use non-activating windows (`WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW`, `S
 
 ### 7.4 Documentation window
 Static help dialog with six sections: concept, managing tasks, active tasks and widget, customization, tray, and reminders and privacy.
+
+### 7.5 Onboarding: getting-started and "What's new" tours (`Onboarding/`)
+- **One engine, two tours.** `CoachMarkOverlay` dims the window, cuts a spotlight (with an accent ring) around a control and shows a teaching-tip card (`TeachingTip` style) next to it. It is created on first use and added on top of `RootGrid` by `MainWindow.ShowTour`.
+  - Card placement is pure geometry in `CoachLayout.PlaceCard` (below → above → right → left → inside the target; centered without a target). It is unit tested and re-run on resize.
+  - Keyboard: → / Enter next, ← back, Esc skip. All other keys are swallowed while a tour is open, so window shortcuts can't act behind it.
+- **When it runs** (`TourScheduler.Decide`, unit tested; called on `Loaded` at `ApplicationIdle`):
+  - `OnboardingCompleted == false` → **welcome tour, for everyone.** New users get the normal first card. Existing users (a settings file or tasks existed) get a "Welcome back" first card, plus "What's new" steps since their version that the tour does not already cover.
+  - Otherwise, when the app version is newer than `LastSeenVersion` → **"What's new"** for every release entry in `(LastSeenVersion, current]`. `null` counts as 1.5.0.0.
+  - Both settings are saved **before** the tour starts, so a tour is never shown twice.
+- **Content** lives in `Tours.cs`. `Welcome` covers Quick add, New task, the list and ★, filters, minimize/close, Settings, and the ? button. Its final card can add a practice task `#START` whose steps teach the core loop.
+- **Adding release highlights:** add `Release("x.y.z.w", coveredByWelcome: false, new CoachStep { Title, Body, Target = w => Bounds(w, w.SomeControl) })` to `Tours.Releases`. Key it by the first build that ships the feature (a development build is fine). The target control needs an `x:Name`; when it is hidden the card is centered instead. `scripts/Test-ReleaseVersion.ps1` warns when a Store release has no entry.
+- **Ways back in:** the title-bar **?** menu (Take the tour · What's new in this version · User guide), About → *Take the tour* / *What's new*, and *Show me around* on the empty task list.
 
 ---
 
@@ -370,6 +406,8 @@ Static help dialog with six sections: concept, managing tasks, active tasks and 
 Native toasts need a package identity. In the MSIX build they work. When the app runs unpackaged (`dotnet run`, Inno Setup), the tray balloon is used.
 
 **Triggers:** deadline reminders (§6) and auto-activation of the next task.
+
+**All profiles:** `NotificationService.UpdateProfile(profile, tasks)` keeps every profile's tasks (the open one from `_tasks`, the others loaded by `MainWindow.LoadOtherProfiles`). Each profile's own `NotificationsEnabled` / `AlertTimerHours` decide its reminders; with more than one profile the toast body ends with ` · <profile name>`.
 
 ---
 
@@ -450,15 +488,16 @@ The `Wide310x150Logo` must be **≤ 200 KB**.
 ### 11.4 Where the version lives (`scripts/Set-Version.ps1` updates all of them)
 1. `TaskTrackerApp.Packaging/AppxManifest.xml` → `Identity/@Version` (authoritative)
 2. `TaskTrackerApp/MainWindow.xaml` → About `Version:` text
-3. `CHANGELOG.md`
-4. `setup.iss` → `AppVersion` and `OutputBaseFilename`
+3. `TaskTrackerApp/TaskTrackerApp.csproj` → `<Version>` (read at runtime by `AppVersion` for the "What's new" tour)
+4. `CHANGELOG.md`
+5. `setup.iss` → `AppVersion` and `OutputBaseFilename`
 
 ### 11.5 Release pipeline (Microsoft Store)
 Full setup and steps are in `PACKAGING_CONFIG.md` → *Releasing to the Microsoft Store*. In short:
 
 | Piece | Role |
 |---|---|
-| `scripts/Set-Version.ps1` | Sets the version in all four places. `-Release` dates the *In Development* changelog section. Encoding-safe (UTF-8, BOM and line endings preserved). |
+| `scripts/Set-Version.ps1` | Sets the version in all five places. `-Release` dates the *In Development* changelog section. Encoding-safe (UTF-8, BOM and line endings preserved). |
 | `scripts/Test-ReleaseVersion.ps1` | Fails unless the revision is `0`, the manifest and About version match, and the changelog section exists and is dated. Emits GitHub annotations. |
 | `scripts/Get-ReleaseNotes.ps1` | Merges the release section plus all development-build sections below it (revision ≠ 0), by *Added / Changed / Fixed / Removed*. `-Format Store`: plain text ≤ 1500 chars, preferring a `### Store release notes` block. `-Format Markdown`: GitHub release body. |
 | `.github/workflows/release-store.yml` | Triggered by a `v*.*.*.0` tag (or manually, with a dry-run default). **build:** validate → notes → tests → `StoreUpload` build → artifact. **publish** (environment `microsoft-store`, required reviewer): `msstore reconfigure` → `msstore publish --noCommit` → set `Listings.<lang>.BaseListing.ReleaseNotes` via `submission get/update` → `submission publish` → GitHub release. |

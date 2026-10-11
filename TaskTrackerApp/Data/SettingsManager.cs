@@ -22,6 +22,9 @@ public class SettingsManager
         _settingsFilePath = Path.Combine(appFolder, "settings.json");
     }
 
+    /// <summary>False until settings are first saved, i.e. on a fresh install.</summary>
+    public bool SettingsFileExists => File.Exists(_settingsFilePath);
+
     public SettingsModel LoadSettings()
     {
         if (!File.Exists(_settingsFilePath))

@@ -8,6 +8,8 @@ Task And Ticket Tracker ("the App") is a local, client-side application. The App
 ## 2. Local Storage
 All tasks, tickets, and settings created within the App are stored entirely locally on your device's hard drive. No data ever leaves your computer.
 
+When you export a profile's tasks, the App writes a file only to the location you choose. What happens to that file afterwards (for example copying it to another computer) is up to you.
+
 ## 3. Network Access
 The App does not connect to the internet or to any other service. To decide whether to hide task details in reminders, it only reads the local Windows notification setting (Do Not Disturb).
 

@@ -103,7 +103,7 @@ The app keeps running in the Windows System Tray (the icons next to the clock).
 
 Open **Settings** at the bottom of the navigation pane to change the active-task limit, reminders, the app theme (Use system setting / Dark / Light), and the widget style, theme, text size, bold text and opacity. **Changes apply and save immediately** — there is no Save button.
 
-*   The **sun/moon** button in the title bar quickly switches between Dark and Light.
+*   The **?** button in the title bar has a quick *Switch to light/dark theme* item.
 *   The app uses your **Windows accent colour** and, on Windows 11, the **Mica** window material. Change the accent in Windows Settings → Personalization → Colors; the app updates straight away.
 *   The navigation pane starts **collapsed to icons**. Click ☰ to expand it and show the labels.
 

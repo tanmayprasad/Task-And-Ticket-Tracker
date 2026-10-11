@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using TaskTrackerApp.Data;
 using TaskTrackerApp.Models;
+using TaskTrackerApp.Onboarding;
 using TaskTrackerApp.Widgets;
 using TaskTrackerApp.Theming;
 
@@ -14,7 +15,7 @@ namespace TaskTrackerApp;
 
 public partial class MainWindow : Window
 {
-    private readonly TaskRepository _repository;
+    private TaskRepository _repository;     // the active profile's tasks (see MainWindow.Profiles.cs)
     private List<TaskModel> _tasks = new();
     private TaskModel? _currentTask;
     private System.Collections.ObjectModel.ObservableCollection<TicketStep> _editingSteps = new();
@@ -24,6 +25,7 @@ public partial class MainWindow : Window
     private ContextAwareEngine _contextEngine;
     private NotificationService _notificationService;
     private SettingsManager _settingsManager;
+    private readonly bool _isExistingUser; // had settings or tasks before this launch (for the welcome tour's first card)
 
     // For drag and drop
     private DataGridRow? _draggedRow;
@@ -49,37 +51,23 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        WindowEffects.Attach(this);
+        // 48 DIP title bar with the app's own caption buttons on every Windows version (Mica is kept on Windows 11).
+        // The maximize button is reported to Windows as the real one, so hovering it still opens Snap Layouts.
+        WindowEffects.Attach(this, customCaption: true);
         SourceInitialized += (s, e) =>
-        {
-            if (WindowEffects.GetUsesSystemCaptionButtons(this))
-            {
-                // Windows draws native caption buttons (with Snap Layouts); hide ours and line the title bar
-                // up with the native buttons (their size depends on DPI and window state)
-                CaptionButtonsPanel.Visibility = Visibility.Collapsed;
-                PositionTitleBar();
-                Loaded += (s2, e2) => PositionTitleBar();
-                SizeChanged += (s2, e2) => PositionTitleBar();
-                StateChanged += (s2, e2) => Dispatcher.BeginInvoke(new Action(PositionTitleBar), System.Windows.Threading.DispatcherPriority.Loaded);
-            }
-            else
-            {
-                // Custom caption buttons (Windows 10): report the maximize button to Windows for Snap Layouts
-                System.Windows.Interop.HwndSource.FromHwnd(new System.Windows.Interop.WindowInteropHelper(this).Handle)?.AddHook(WndProc);
-            }
-        };
+            System.Windows.Interop.HwndSource.FromHwnd(new System.Windows.Interop.WindowInteropHelper(this).Handle)?.AddHook(WndProc);
         App.ThemeChanged += (s, e) =>
         {
             UpdateThemeIcon();
             var settingsManager = _settingsManager; // assigned later in the constructor
             if (_widget != null && settingsManager != null) _widget.ApplySettings(settingsManager.LoadSettings()); // accent colour on the widget
         };
-        _repository = new TaskRepository();
-        
         // Setup Engines
         _contextEngine = new ContextAwareEngine();
         _settingsManager = new SettingsManager();
-        _notificationService = new NotificationService(_contextEngine, _settingsManager, (title, message) => 
+        _profiles = new ProfileStore(seed: _settingsManager.LoadSettings()); // creates "Default" on first run
+        _repository = _profiles.RepositoryFor(_profiles.Active);
+        _notificationService = new NotificationService(_contextEngine, (title, message) => 
         {
             Dispatcher.Invoke(() => 
             {
@@ -94,10 +82,16 @@ public partial class MainWindow : Window
         _isDetailsMaximized = settings.IsDetailsMaximized;
         ApplyMaximizeState();
 
+        _isExistingUser = _settingsManager.SettingsFileExists;
         LoadTasks();
+        _isExistingUser |= _tasks.Count > 0;
+        LoadOtherProfiles();
+        UpdateProfileUi();
 
         // Hook into Loaded event to aggressively trim RAM after UI is rendered
         this.Loaded += (s, e) => TrimMemory();
+        // Getting-started tour / "What's new", once everything is laid out
+        this.Loaded += (s, e) => Dispatcher.BeginInvoke(new Action(RunStartupTour), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
 
         _snackbarTimer.Tick += (s, e) => HideSnackbar();
         InitializeTaskForm();
@@ -138,6 +132,8 @@ public partial class MainWindow : Window
             FilterVstsTextBox.SelectAll();
         });
         AddShortcut(Key.F1, ModifierKeys.None, () => ViewDocs_Click(this, new RoutedEventArgs()));
+        // The custom title bar has no native system menu, so open it on Alt+Space ourselves
+        AddShortcut(Key.Space, ModifierKeys.Alt, () => WindowEffects.ShowSystemMenu(this));
         // Delete only acts on the selected row, never while typing in a text field
         AddShortcut(Key.Delete, ModifierKeys.None, () => { if (TasksDataGrid.SelectedItem is TaskModel t) DeleteTask(t); },
             () => TasksTabContent.Visibility == Visibility.Visible && TasksDataGrid.SelectedItem is TaskModel
@@ -153,7 +149,7 @@ public partial class MainWindow : Window
         InputBindings.Add(new KeyBinding(command, key, modifiers));
     }
 
-    private void ShowTasksTab()
+    internal void ShowTasksTab()
     {
         if (NavTasks.IsChecked != true) NavTasks.IsChecked = true;
         else Nav_Changed(this, new RoutedEventArgs());
@@ -288,10 +284,14 @@ public partial class MainWindow : Window
         _loadingSettings = true;
         try
         {
+            // Focus and reminder settings belong to the open profile
+            var profile = _profiles.Active;
+            SelectByTag(MaxActiveTasksComboBox, Math.Clamp(profile.MaxActiveTasks, 1, 10).ToString());
+            NotificationsToggle.IsChecked = profile.NotificationsEnabled;
+            SelectAlertTime(profile.AlertTimerHours);
+            BuildProfilesPage();
+
             var settings = _settingsManager.LoadSettings();
-            SelectByTag(MaxActiveTasksComboBox, Math.Clamp(settings.MaxActiveTasks, 1, 10).ToString());
-            NotificationsToggle.IsChecked = settings.NotificationsEnabled;
-            SelectAlertTime(settings.AlertTimerHours);
             SelectByTag(ThemeComboBox, settings.Theme);
             SelectByTag(WidgetModeComboBox, settings.WidgetMode);
             SelectByTag(WidgetThemeComboBox, settings.WidgetTheme);
@@ -341,16 +341,16 @@ public partial class MainWindow : Window
 
     private void MaxActiveTasksComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (int.TryParse(TagOf(sender), out int max)) UpdateSetting(s => s.MaxActiveTasks = max);
+        if (int.TryParse(TagOf(sender), out int max)) UpdateProfileSetting(p => p.MaxActiveTasks = max);
     }
 
     private void NotificationsToggle_Click(object sender, RoutedEventArgs e) =>
-        UpdateSetting(s => s.NotificationsEnabled = NotificationsToggle.IsChecked == true);
+        UpdateProfileSetting(p => p.NotificationsEnabled = NotificationsToggle.IsChecked == true);
 
     private void AlertTimerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (double.TryParse(TagOf(sender), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double hours))
-            UpdateSetting(s => s.AlertTimerHours = hours);
+            UpdateProfileSetting(p => p.AlertTimerHours = hours);
     }
 
     private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -405,10 +405,10 @@ public partial class MainWindow : Window
 
     private void WidgetSlider_MouseUp(object sender, MouseButtonEventArgs e) => UpdateSetting(ApplyWidgetSliders);
 
+    /// <summary>The ? menu's theme item offers the opposite of the current theme.</summary>
     private void UpdateThemeIcon()
     {
-        // Brightness icon in dark mode, moon in light mode
-        if (ThemeIconTextBlock != null) ThemeIconTextBlock.Text = App.IsDarkTheme ? "\xE706" : "\xE708";
+        if (ThemeMenuItem != null) ThemeMenuItem.Header = App.IsDarkTheme ? "Switch to light theme" : "Switch to dark theme";
     }
 
     private void ThemeToggle_Click(object sender, RoutedEventArgs e)
@@ -456,7 +456,7 @@ public partial class MainWindow : Window
         RefreshGrid();
         
         // Push to notification service
-        _notificationService.UpdateTasks(_tasks);
+        _notificationService.UpdateProfile(_profiles.Active, _tasks);
     }
 
     private void Filter_Changed(object sender, RoutedEventArgs e)
@@ -494,6 +494,8 @@ public partial class MainWindow : Window
         TasksDataGrid.SelectionChanged -= TasksDataGrid_SelectionChanged;
         TasksDataGrid.ItemsSource = null;
         var filteredList = filtered.ToList();
+        // The rank column shows the visible order (1, 2, 3 …), not the global priority that also counts hidden tasks
+        for (int i = 0; i < filteredList.Count; i++) filteredList[i].ListPosition = i + 1;
         TasksDataGrid.ItemsSource = filteredList;
         
         if (selectedId != Guid.Empty)
@@ -514,6 +516,7 @@ public partial class MainWindow : Window
         if (EmptyStatePanel == null) return;
         EmptyStatePanel.Visibility = visibleCount == 0 ? Visibility.Visible : Visibility.Collapsed;
         if (visibleCount > 0) return;
+        EmptyStateTourButton.Visibility = _tasks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
         if (_tasks.Count == 0)
         {
@@ -795,12 +798,12 @@ public partial class MainWindow : Window
         {
             // "Start now" makes the task active straight away, within the active-task limit
             bool startNow = StartNowToggle.IsChecked == true;
-            int maxActive = _settingsManager.LoadSettings().MaxActiveTasks;
+            int maxActive = _profiles.Active.MaxActiveTasks;
             if (startNow && _tasks.Count(t => t.IsActive) >= maxActive)
             {
                 startNow = false;
                 ShowSnackbar($"Saved as To Do — you already have {maxActive} active tasks.",
-                    "Change limit", () => OpenSettings_Click(this, new RoutedEventArgs()));
+                    "Change limit", OpenProfilesPage);
             }
             _currentTask.State = startNow ? "In progress" : "To Do";
             _currentTask.IsActive = startNow;
@@ -1057,6 +1060,94 @@ public partial class MainWindow : Window
         _userGuide.ShowDialog();
     }
 
+    // --- Getting-started tour and "What's new" (Onboarding/) ---
+
+    private CoachMarkOverlay? _tour;
+
+    internal bool HasPracticeTask => _tasks.Any(t => t.VstsNumber == Tours.PracticeTicket);
+
+    private void ShowTour(IReadOnlyList<CoachStep> steps)
+    {
+        if (steps.Count == 0) return;
+        if (_tour == null)
+        {
+            // Created on first use, so users who never open a tour pay nothing for it
+            _tour = new CoachMarkOverlay();
+            Grid.SetRowSpan(_tour, 2);
+            Panel.SetZIndex(_tour, 100);
+            RootGrid.Children.Add(_tour);
+        }
+        HideSnackbar();
+        _tour.Start(this, steps, () => { if (QuickAddTextBox.IsVisible) QuickAddTextBox.Focus(); });
+    }
+
+    private void RunStartupTour()
+    {
+        if (!IsVisible) return; // started hidden (e.g. restored straight to the widget)
+
+        var settings = _settingsManager.LoadSettings();
+        var decision = TourScheduler.Decide(settings.OnboardingCompleted, _isExistingUser, settings.LastSeenVersion,
+                                            AppVersion.Current, Tours.Releases.Select(r => r.Info));
+
+        // Recorded before the tour starts, so it is never shown twice, even if the app is closed halfway through
+        string seen = TourScheduler.VersionToRecord(settings.LastSeenVersion, AppVersion.Current);
+        if (!settings.OnboardingCompleted || settings.LastSeenVersion != seen)
+        {
+            settings.OnboardingCompleted = true;
+            settings.LastSeenVersion = seen;
+            _settingsManager.SaveSettings(settings);
+        }
+
+        switch (decision.Kind)
+        {
+            case TourKind.Welcome:
+                ShowTour(Tours.Welcome(this, decision.IsReturningUser, _profiles.Active.MaxActiveTasks, Tours.WhatsNewSteps(decision.Releases)));
+                break;
+            case TourKind.WhatsNew:
+                ShowTour(Tours.WhatsNew(decision.Releases));
+                break;
+        }
+    }
+
+    private void HelpButton_Click(object sender, RoutedEventArgs e)
+    {
+        var menu = HelpButton.ContextMenu;
+        menu.PlacementTarget = HelpButton;
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        menu.IsOpen = true;
+    }
+
+    private void StartWelcomeTour_Click(object sender, RoutedEventArgs e) =>
+        ShowTour(Tours.Welcome(this, returningUser: false, _profiles.Active.MaxActiveTasks, Array.Empty<CoachStep>()));
+
+    private void ShowWhatsNew_Click(object sender, RoutedEventArgs e)
+    {
+        // The newest release with highlights that this build includes
+        var latest = Tours.Releases.Where(r => r.Version <= AppVersion.Current).MaxBy(r => r.Version);
+        if (latest == null)
+        {
+            ShowSnackbar("There are no highlights for this version. The user guide covers every feature.", "Open guide",
+                () => ViewDocs_Click(this, new RoutedEventArgs()));
+            return;
+        }
+        ShowTour(Tours.WhatsNew([latest.Version]));
+    }
+
+    /// <summary>Adds the tour's practice task at the top of the list (once).</summary>
+    internal void AddPracticeTask()
+    {
+        ShowTasksTab();
+        var task = _tasks.FirstOrDefault(t => t.VstsNumber == Tours.PracticeTicket);
+        if (task == null)
+        {
+            task = Tours.CreatePracticeTask();
+            _tasks.Insert(0, task);
+            SaveAndRefresh();
+        }
+        if (TasksDataGrid.Items.Contains(task)) TasksDataGrid.ScrollIntoView(task);
+        ShowSnackbar($"Practice task #{Tours.PracticeTicket} is at the top of your list. Follow its steps to try the app.");
+    }
+
     private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
     {
         try
@@ -1078,12 +1169,12 @@ public partial class MainWindow : Window
         }
 
         // Enforce max active tasks setting
-        var settings = _settingsManager.LoadSettings();
+        int maxActive = _profiles.Active.MaxActiveTasks;
         var activeCount = _tasks.Count(t => t.IsActive);
-        if (activeCount > settings.MaxActiveTasks)
+        if (activeCount > maxActive)
         {
-            ShowSnackbar($"You can have up to {settings.MaxActiveTasks} active tasks. Finish or deactivate one first.",
-                "Change limit", () => OpenSettings_Click(this, new RoutedEventArgs()));
+            ShowSnackbar($"You can have up to {maxActive} active tasks. Finish or deactivate one first.",
+                "Change limit", OpenProfilesPage);
             
             // Revert the check
             if (sender is CheckBox cbRevert && cbRevert.DataContext is TaskModel t)
@@ -1134,7 +1225,7 @@ public partial class MainWindow : Window
             if (_tasks.Any(t => t.Id == task.Id)) return;
 
             // Another task may have been auto-activated meanwhile; don't exceed the active limit
-            var max = _settingsManager.LoadSettings().MaxActiveTasks;
+            var max = _profiles.Active.MaxActiveTasks;
             task.IsActive = wasActive && _tasks.Count(t => t.IsActive) < max;
             task.State = state;
             _tasks.Insert(Math.Min(index, _tasks.Count), task);
@@ -1194,7 +1285,7 @@ public partial class MainWindow : Window
         PersistTasks();
         RefreshGrid();
         
-        _notificationService?.UpdateTasks(_tasks);
+        _notificationService?.UpdateProfile(_profiles.Active, _tasks);
         UpdateWidgetIfActive();
     }
 
@@ -1502,15 +1593,20 @@ public partial class MainWindow : Window
 
     private void Nav_Changed(object sender, RoutedEventArgs e)
     {
-        if (TasksTabContent == null || AboutTabContent == null || SettingsTabContent == null) return;
+        if (TasksTabContent == null || AboutTabContent == null || SettingsTabContent == null || ProfilesTabContent == null) return;
 
         TasksTabContent.Visibility = NavTasks?.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        ProfilesTabContent.Visibility = NavProfiles?.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         AboutTabContent.Visibility = NavAbout?.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         SettingsTabContent.Visibility = NavSettings?.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
 
-        if (NavSettings?.IsChecked == true) LoadSettingsIntoControls();
+        // The Profiles page holds the per-profile focus and reminder controls; Settings the app-wide ones
+        if (NavSettings?.IsChecked == true || NavProfiles?.IsChecked == true) LoadSettingsIntoControls();
 
-        var page = NavTasks?.IsChecked == true ? TasksTabContent : NavAbout?.IsChecked == true ? AboutTabContent : SettingsTabContent;
+        UIElement page = NavTasks?.IsChecked == true ? TasksTabContent
+            : NavProfiles?.IsChecked == true ? ProfilesTabContent
+            : NavAbout?.IsChecked == true ? AboutTabContent
+            : SettingsTabContent;
         if (IsLoaded) Motion.FadeSlideIn(page, fromY: 8, milliseconds: 120);
     }
 
@@ -1525,34 +1621,6 @@ public partial class MainWindow : Window
     }
 
     // --- Maximize / restore and Snap Layouts ---
-
-    protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
-    {
-        base.OnDpiChanged(oldDpi, newDpi);
-        Dispatcher.BeginInvoke(new Action(PositionTitleBar), System.Windows.Threading.DispatcherPriority.Loaded);
-    }
-
-    /// <summary>
-    /// With native caption buttons, the title bar takes their height and the theme button sits on the same line,
-    /// directly to their left, at the same height.
-    /// </summary>
-    private void PositionTitleBar()
-    {
-        if (!WindowEffects.GetUsesSystemCaptionButtons(this)) return;
-        if (!WindowEffects.TryGetCaptionButtonBounds(this, out Rect bounds)) return;
-
-        double barHeight = Math.Round(bounds.Bottom, 1);
-        TitleRow.Height = new GridLength(barHeight);
-        var chrome = System.Windows.Shell.WindowChrome.GetWindowChrome(this);
-        if (chrome != null && !chrome.IsFrozen) chrome.CaptionHeight = barHeight;
-
-        // Distance from the right edge of the title bar to the left edge of the native buttons
-        double rightOfBar = TitleBar.ActualWidth > 0 ? TitleBar.ActualWidth : ActualWidth - RootGrid.Margin.Left - RootGrid.Margin.Right;
-        double offset = Math.Max(0, rightOfBar - (bounds.Left - RootGrid.Margin.Left)) + 4;
-        ThemeToggleButton.VerticalAlignment = VerticalAlignment.Top;
-        ThemeToggleButton.Height = bounds.Height;
-        ThemeToggleButton.Margin = new Thickness(0, bounds.Top, offset, 0);
-    }
 
     private void MaximizeRestore_Click(object sender, RoutedEventArgs e) =>
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;

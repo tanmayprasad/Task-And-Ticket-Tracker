@@ -129,6 +129,18 @@
         <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
     </Style>
 
+    <!-- Title-bar text: dims while the window is inactive, like the native title -->
+    <Style x:Key="TitleBarText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource TextMuted}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- Pill-shaped quick-pick chip -->
     <Style x:Key="ChipButton" TargetType="Button" BasedOn="{StaticResource ButtonBaseFluent}">
         <Setter Property="FontSize" Value="12"/>
@@ -156,9 +168,11 @@
     </Style>
 
     <!-- Title-bar caption buttons -->
+    <!-- Title-bar caption buttons (help, minimize, maximize, close): 46 x 40,
+         square hover, dimmed while the window is inactive -->
     <Style x:Key="CaptionButton" TargetType="Button">
         <Setter Property="Width" Value="46"/>
-        <Setter Property="Height" Value="32"/>
+        <Setter Property="Height" Value="40"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
         <Setter Property="FontFamily" Value="{StaticResource IconFont}"/>
@@ -182,6 +196,11 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource TextMuted}"/>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
     <Style x:Key="CaptionCloseButton" TargetType="Button" BasedOn="{StaticResource CaptionButton}">
         <Setter Property="Template">
@@ -225,7 +244,8 @@
                                 <ScaleTransform ScaleY="0.4"/>
                             </Border.RenderTransform>
                         </Border>
-                        <ContentPresenter Margin="12,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        <!-- 4 + 10 + half of a 20 DIP icon = 24: nav icons share one centre line with the hamburger and the title-bar icon -->
+                        <ContentPresenter Margin="10,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -833,6 +853,18 @@
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="8"/>
         <Setter Property="Padding" Value="16"/>
+    </Style>
+
+    <!-- Tour card (Onboarding/CoachMarkOverlay): a solid flyout surface so it reads clearly over the dimmed window -->
+    <Style x:Key="TeachingTip" TargetType="Border" BasedOn="{StaticResource Card}">
+        <Setter Property="Background" Value="{DynamicResource FlyoutBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderMedium}"/>
+        <Setter Property="Padding" Value="20,16"/>
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect ShadowDepth="6" Direction="270" BlurRadius="24" Opacity="0.3"/>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- A Windows 11 Settings row: icon · title + description · control -->

@@ -118,12 +118,14 @@
     </Window.Resources>
     
     <Grid>
-    <!-- Transparent Background with subtle shadow -->
-    <Border x:Name="MainBorder" Background="#F2202020" BorderBrush="#3D3D3D" BorderThickness="1" CornerRadius="8" Margin="8"
+    <!-- Card (+ the dock tab when edge-docked). The shadow is on this frame so the tab and the card cast one shadow
+         and read as a single piece. The 8 DIP margin is the transparent shadow area. -->
+    <Grid x:Name="WidgetFrame" Margin="8">
+    <Grid.Effect>
+        <DropShadowEffect ShadowDepth="2" BlurRadius="10" Opacity="0.5" />
+    </Grid.Effect>
+    <Border x:Name="MainBorder" Background="#F2202020" BorderBrush="#3D3D3D" BorderThickness="1" CornerRadius="8"
             MouseLeftButtonDown="Border_MouseLeftButtonDown">
-        <Border.Effect>
-            <DropShadowEffect ShadowDepth="2" BlurRadius="10" Opacity="0.5" />
-        </Border.Effect>
         
         <Grid Margin="8">
             <Grid.RowDefinitions>
@@ -260,11 +262,13 @@
         </Grid>
     </Border>
 
-    <!-- Edge-dock tab: the only part left on screen while the docked widget is collapsed -->
-    <Border x:Name="DockTab" Visibility="Collapsed" Margin="8" CornerRadius="4" Background="#6366F1" Cursor="Hand"
-            ToolTipService.InitialShowDelay="{StaticResource HoverDelay}">
+    <!-- Edge-dock tab: attached to the card's inner side whenever the widget is docked. It is the only part left on
+         screen while collapsed, and slides with the card when it expands (see UpdateDockVisuals). -->
+    <Border x:Name="DockTab" Visibility="Collapsed" Background="#6366F1" BorderBrush="#3D3D3D" Cursor="Hand"
+            ToolTipService.InitialShowDelay="{StaticResource HoverDelay}" MouseLeftButtonUp="DockTab_MouseLeftButtonUp">
         <TextBlock x:Name="DockTabText" Text="•" Foreground="White" FontSize="10" FontWeight="Bold"
                    HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
     </Border>
+    </Grid>
     </Grid>
 </Window>

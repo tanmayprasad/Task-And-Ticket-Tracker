@@ -16,6 +16,8 @@ public class SettingsModel
     public string? DockEdge { get; set; } = null; // "Left", "Top", "Right", "Bottom"; null = not docked
     public bool IsDetailsMaximized { get; set; } = false;
     public bool CloseToTrayTipShown { get; set; } = false;
+    public bool OnboardingCompleted { get; set; } = false; // the getting-started tour was shown (Onboarding/TourScheduler)
+    public string? LastSeenVersion { get; set; } = null;   // newest app version whose "What's new" was shown; null = before 1.5.0.1
 }
 
 public static class WidgetModes

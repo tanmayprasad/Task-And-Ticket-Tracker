@@ -14,7 +14,7 @@ internal sealed class EdgeDockController : IDisposable
 {
     private const int SnapThresholdDip = 48;
     private const double AnimationMs = 180;
-    private static readonly TimeSpan CollapseDelay = TimeSpan.FromMilliseconds(700);
+    private static readonly TimeSpan CollapseDelay = TimeSpan.FromMilliseconds(300); // short grace period: a brief slip off the widget doesn't hide it
 
     private readonly Window _window;
     private readonly IntPtr _hwnd;

@@ -8,16 +8,15 @@ namespace TaskTrackerApp;
 public class NotificationService
 {
     private readonly ContextAwareEngine _contextEngine;
-    private readonly TaskTrackerApp.Data.SettingsManager _settingsManager;
     private readonly Action<string, string> _showToastAction;
     private readonly System.Windows.Threading.DispatcherTimer _pollingTimer;
-    private List<TaskTrackerApp.Models.TaskModel> _tasks = new();
+    // Every profile's tasks with its own reminder settings: reminders fire for all profiles, not just the open one
+    private readonly Dictionary<Guid, (TaskTrackerApp.Models.ProfileModel Profile, List<TaskTrackerApp.Models.TaskModel> Tasks)> _profiles = new();
     private HashSet<Guid> _notifiedTasks = new();
 
-    public NotificationService(ContextAwareEngine contextEngine, TaskTrackerApp.Data.SettingsManager settingsManager, Action<string, string> showToastAction)
+    public NotificationService(ContextAwareEngine contextEngine, Action<string, string> showToastAction)
     {
         _contextEngine = contextEngine;
-        _settingsManager = settingsManager;
         _showToastAction = showToastAction;
         
         // Poll every 1 minute. A DispatcherTimer runs on the UI thread, so the task list is never
@@ -27,31 +26,42 @@ public class NotificationService
         _pollingTimer.Start();
     }
 
-    public void UpdateTasks(List<TaskTrackerApp.Models.TaskModel> tasks)
+    /// <summary>Sets a profile's tasks and reminder settings (the profile object is read on every check).</summary>
+    public void UpdateProfile(TaskTrackerApp.Models.ProfileModel profile, List<TaskTrackerApp.Models.TaskModel> tasks)
     {
-        _tasks = tasks;
+        _profiles[profile.Id] = (profile, tasks);
+    }
+
+    /// <summary>Drops profiles that no longer exist.</summary>
+    public void KeepProfiles(IEnumerable<Guid> profileIds)
+    {
+        var keep = profileIds.ToHashSet();
+        foreach (var id in _profiles.Keys.Where(id => !keep.Contains(id)).ToList()) _profiles.Remove(id);
     }
 
     private void PollingTimer_Tick(object? sender, EventArgs e)
     {
-        if (_tasks == null) return;
-        
-        var settings = _settingsManager.LoadSettings();
-        if (!settings.NotificationsEnabled) return;
-        
         var now = DateTime.Now;
-        
-        foreach (var task in _tasks)
+        bool nameProfiles = _profiles.Count > 1;
+
+        foreach (var (profile, tasks) in _profiles.Values)
         {
-            if (task.TargetDate.HasValue && !_notifiedTasks.Contains(task.Id) && task.State != "Done")
+            if (!profile.NotificationsEnabled) continue;
+            double hours = profile.AlertTimerHours;
+
+            foreach (var task in tasks)
             {
-                var timeUntilDue = task.TargetDate.Value - now;
-                
-                // Alert window: between N-0.1 and N hours away
-                if (timeUntilDue.TotalHours <= settings.AlertTimerHours && timeUntilDue.TotalHours > (settings.AlertTimerHours - 0.1))
+                if (task.TargetDate.HasValue && !_notifiedTasks.Contains(task.Id) && task.State != "Done")
                 {
-                    ShowTaskReminder($"Upcoming Deadline ({settings.AlertTimerHours} Hours)", $"Task: {task.Title}");
-                    _notifiedTasks.Add(task.Id);
+                    var timeUntilDue = task.TargetDate.Value - now;
+
+                    // Alert window: between N-0.1 and N hours away
+                    if (timeUntilDue.TotalHours <= hours && timeUntilDue.TotalHours > (hours - 0.1))
+                    {
+                        string where = nameProfiles ? $" · {profile.Name}" : string.Empty;
+                        ShowTaskReminder($"Upcoming Deadline ({hours} Hours)", $"Task: {task.Title}{where}");
+                        _notifiedTasks.Add(task.Id);
+                    }
                 }
             }
         }

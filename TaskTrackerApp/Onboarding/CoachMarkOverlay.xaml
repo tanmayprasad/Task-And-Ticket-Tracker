@@ -1,0 +1,46 @@
+<!--
+    Tour overlay: dims the window, cuts a spotlight around the control being explained, and shows a teaching-tip card
+    next to it. Created on first use by MainWindow.ShowTour and placed above everything in RootGrid.
+-->
+<UserControl x:Class="TaskTrackerApp.Onboarding.CoachMarkOverlay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Focusable="False" Visibility="Collapsed"
+             KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.ControlTabNavigation="Cycle" KeyboardNavigation.DirectionalNavigation="None">
+    <!-- No tooltips on the card buttons: the card moves under a resting mouse, which would leave them hanging.
+         Keyboard: Right/Enter next, Left back, Esc close (see CoachMarkOverlay.xaml.cs). -->
+    <!-- Transparent background: clicks outside the card never reach the app while a tour is open -->
+    <Canvas x:Name="Surface" Background="Transparent" ClipToBounds="True">
+        <Path x:Name="Scrim" Fill="{DynamicResource OverlayBackground}"/>
+        <Border x:Name="Ring" BorderBrush="{DynamicResource PrimaryBackground}" BorderThickness="2" CornerRadius="8" IsHitTestVisible="False" Visibility="Collapsed"/>
+
+        <Border x:Name="Card" Style="{StaticResource TeachingTip}" Width="360" AutomationProperties.LiveSetting="Assertive">
+            <StackPanel>
+                <Grid x:Name="CardHeader" Margin="0,0,0,10">
+                    <Border x:Name="NewPill" Style="{StaticResource Chip}" Background="{DynamicResource PrimaryBackground}" BorderThickness="0"
+                            HorizontalAlignment="Left" Margin="0" Padding="8,1" Visibility="Collapsed">
+                        <TextBlock Text="NEW" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextOnAccent}"/>
+                    </Border>
+                    <TextBlock x:Name="ProgressText" Style="{StaticResource CaptionText}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </Grid>
+                <TextBlock x:Name="TitleText" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+                <TextBlock x:Name="BodyText" Style="{StaticResource BodyText}" Margin="0,8,0,0"/>
+                <UniformGrid x:Name="HighlightsGrid" Rows="1" Margin="0,18,0,0" Visibility="Collapsed"/>
+                <Button x:Name="ExtraButton" Style="{StaticResource StandardButton}" HorizontalAlignment="Left" Margin="0,18,0,0" Visibility="Collapsed" Click="Extra_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock x:Name="ExtraText" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Grid Margin="0,20,0,0">
+                    <Button x:Name="SkipButton" Style="{StaticResource SubtleButton}" Foreground="{DynamicResource TextSecondary}" HorizontalAlignment="Left" Click="Skip_Click"
+                            AutomationProperties.HelpText="Closes the tour (Esc). Replay it any time from the ? button."/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="BackButton" Content="Back" Style="{StaticResource StandardButton}" Margin="0,0,8,0" Click="Back_Click" AutomationProperties.HelpText="Previous step (Left arrow)"/>
+                        <Button x:Name="NextButton" Style="{StaticResource PrimaryButton}" MinWidth="80" Click="Next_Click" AutomationProperties.HelpText="Next step (Right arrow or Enter)"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </Canvas>
+</UserControl>
