@@ -38,6 +38,12 @@ public partial class App : Application
         AccentService.Initialize();
         var settingsManager = new TaskTrackerApp.Data.SettingsManager();
         ApplyTheme(settingsManager.LoadSettings().Theme);
+
+        // The window is created here (no StartupUri) so a start at Windows sign-in can go straight to the widget
+        var window = new MainWindow();
+        MainWindow = window;
+        if (StartupLauncher.IsStartupLaunch(e.Args) && window.CanStartInWidget) window.StartInWidget();
+        else window.Show();
     }
 
     /// <summary>

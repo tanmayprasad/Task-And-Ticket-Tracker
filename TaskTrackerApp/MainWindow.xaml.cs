@@ -298,6 +298,7 @@ public partial class MainWindow : Window
             WidgetTextSizeSlider.Value = Math.Clamp(settings.WidgetTextSize, 12, 36);
             WidgetTextBoldToggle.IsChecked = settings.WidgetTextBold;
             WidgetOpacitySlider.Value = Math.Clamp(settings.WidgetOpacity, 0.4, 1.0);
+            RefreshStartupToggle();
         }
         finally
         {
@@ -1307,12 +1308,61 @@ public partial class MainWindow : Window
         if (this.WindowState == WindowState.Minimized)
         {
             this.Hide();
-            
-            var settings = _settingsManager.LoadSettings();
-            var widget = EnsureWidget(settings);
-            widget.ApplySettings(settings);
-            widget.SetActiveTasks(_tasks.Where(t => t.IsActive).ToList());
-            widget.Show();
+            ShowWidget();
+        }
+    }
+
+    private void ShowWidget()
+    {
+        var settings = _settingsManager.LoadSettings();
+        var widget = EnsureWidget(settings);
+        widget.ApplySettings(settings);
+        widget.SetActiveTasks(_tasks.Where(t => t.IsActive).ToList());
+        widget.Show();
+    }
+
+    // --- Start with Windows (StartupLauncher) ---
+
+    /// <summary>False while the getting-started tour is still due: a new user gets the normal window first.</summary>
+    internal bool CanStartInWidget => _settingsManager.LoadSettings().OnboardingCompleted;
+
+    /// <summary>Start at Windows sign-in: tray icon and widget only, as after minimize. The window is never shown.</summary>
+    internal void StartInWidget()
+    {
+        MyNotifyIcon.ForceCreate(); // otherwise the tray icon only appears once the window has loaded
+        ShowWidget();
+    }
+
+    private async void RefreshStartupToggle() => ApplyStartupState(await StartupLauncher.GetStateAsync());
+
+    private void ApplyStartupState(StartupState state)
+    {
+        StartWithWindowsToggle.IsChecked = state == StartupState.On;
+        StartWithWindowsToggle.IsEnabled = state != StartupState.BlockedByPolicy;
+        StartWithWindowsDesc.Text = state switch
+        {
+            StartupState.BlockedByUser => "Turned off in Windows. Switch it back on in Windows Settings → Apps → Startup.",
+            StartupState.BlockedByPolicy => "Managed by your organisation.",
+            _ => "Opens the desktop widget when you sign in, so reminders keep working.",
+        };
+    }
+
+    private async void StartWithWindowsToggle_Click(object sender, RoutedEventArgs e)
+    {
+        bool wanted = StartWithWindowsToggle.IsChecked == true;
+        StartWithWindowsToggle.IsEnabled = false; // no second click while Windows answers
+        var state = await StartupLauncher.SetEnabledAsync(wanted);
+        ApplyStartupState(state);
+
+        if (!wanted || state == StartupState.On) return;
+        if (state == StartupState.BlockedByUser)
+        {
+            ShowSnackbar("Start-up is turned off in Windows.", "Open Windows settings",
+                () => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ms-settings:startupapps") { UseShellExecute = true }));
+        }
+        else if (state == StartupState.Off)
+        {
+            ShowSnackbar("Couldn't turn on start with Windows.");
         }
     }
 

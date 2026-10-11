@@ -24,5 +24,9 @@ Name: "{autodesktop}\TaskTrackerApp"; Filename: "{app}\TaskTrackerApp.exe"; Task
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
+[Registry]
+; "Start with Windows" is written by the app (StartupLauncher); only remove it on uninstall
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "TaskAndTicketTracker"; ValueType: none; Flags: uninsdeletevalue dontcreatekey
+
 [Run]
 Filename: "{app}\TaskTrackerApp.exe"; Description: "{cm:LaunchProgram,TaskTrackerApp}"; Flags: nowait postinstall skipifsilent

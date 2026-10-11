@@ -174,7 +174,10 @@ flowchart LR
 1. `App.OnStartup` acquires the mutex; if another instance exists, it shuts down.
 2. The theme is applied from `settings.json`.
 3. The `MainWindow` constructor creates the engines, starts `ContextAwareEngine.StartMonitoring()`, restores the details-panel maximize state and calls `LoadTasks()`. That call shows a warning dialog if the task file had to be recovered, migrates the legacy state `"Doing"` to `"In progress"`, enforces the active-task rules and pushes the tasks to `NotificationService`.
-4. `Loaded` → `TrimMemory()`, then (at `ApplicationIdle`) `RunStartupTour()`, which shows the welcome or "What's new" tour once (§7.5).
+4. `App.OnStartup` then shows the window (there is no `StartupUri`). When Windows started the app at sign-in (`StartupLauncher.IsStartupLaunch`) and the getting-started tour is not due, it calls `MainWindow.StartInWidget()` instead: tray icon and widget only, the window is never shown.
+5. `Loaded` (first time the window is shown) → `TrimMemory()`, then (at `ApplicationIdle`) `RunStartupTour()`, which shows the welcome or "What's new" tour once (§7.5).
+
+**Start with Windows (`StartupLauncher.cs`):** Windows is the source of truth, nothing is stored in `settings.json`. The MSIX install uses the manifest's `windows.startupTask` extension (`TaskId` `TaskTrackerStartup`, disabled by default) through `Windows.ApplicationModel.StartupTask`; a start-up launch is recognised by `ActivationKind.StartupTask`. An unpackaged build writes `HKCU\…\CurrentVersion\Run\TaskAndTicketTracker` = `"<exe>" --startup` and reads `Explorer\StartupApproved\Run` to see whether the user disabled it in Task Manager. A state of *disabled by user* can only be undone in Windows, so the toggle shows a hint and a link to `ms-settings:startupapps`.
 
 **Minimize → widget:** `Window_StateChanged(Minimized)` hides the manager and calls `EnsureWidget(settings)`. That returns the presenter for `WidgetMode`, recreating it if the style changed (and falling back to Floating when the taskbar strip is unsupported). The manager then applies the settings, passes the active tasks and shows it. Saving Settings with a new style swaps the presenter immediately.
 
@@ -342,6 +345,7 @@ Covered by `TaskTrackerApp.Tests/TaskRepositoryTests.cs`. `TaskRepository(string
   - **Focus:** active tasks 1–10.
   - **Reminders:** toggle, plus "Remind me" (at the due time, 30 min … 2 days; a custom legacy value is kept).
   - **Appearance:** app theme, plus an accent-colour swatch.
+  - **Start-up:** *Start with Windows* toggle (`StartupLauncher`, §4.3); reads the real Windows state each time the page opens.
   - **Desktop widget:** style, theme, text-size slider 12–36, bold, opacity slider 40–100%.
   - **Instant apply** through `UpdateSetting(change, save)`: load → change → save → `EnsureWidget(...).ApplySettings`. `_loadingSettings` suppresses saves while the page is filled. Sliders preview while dragging and save on mouse-up.
 - **About tab:**

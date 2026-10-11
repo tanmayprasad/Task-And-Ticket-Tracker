@@ -7,21 +7,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [1.6.0.0] - 2026-10-11
 
 ### Store release notes
+- Profiles: keep separate task lists, for example Work and Personal, each with its own active-task limit and reminders. Reminders arrive for every profile.
+- Export a profile's tasks to a file (JSON, or CSV for Excel) and import them into any profile.
+- Start with Windows: a new switch in Settings starts the app when you sign in, straight to the desktop widget, so reminders never depend on you opening it.
 - New to the app, or just updated? A one-minute guided tour now shows how everything works: Quick add, active (★) tasks, the desktop widget, and what minimize and close do.
 - After each update, a short "What's new" tour points out the new features right where they are.
 - A new ? button replays the tour, shows what's new and opens the user guide.
-- Profiles: keep separate task lists, for example Work and Personal, each with its own active-task limit and reminders. Reminders arrive for every profile.
-- Export a profile's tasks to a file (JSON, or CSV for Excel) and import them into any profile.
 - The edge-docked widget keeps its ticket tab attached while it slides in and out, and hides sooner after you move away.
 
 ### Added
+- **Start with Windows** (`StartupLauncher.cs`, Settings → Start-up). Off by default. A start at sign-in shows only the tray icon and the desktop widget, as after minimize; a user who hasn't seen the getting-started tour still gets the normal window.
+  - The Store install uses the package's start-up task (`windows.startupTask` in `AppxManifest.xml`); other builds use the per-user `Run` registry key with `--startup`.
+  - The switch always shows the real Windows state. If start-up was turned off in Task Manager or Windows Settings, it says so and links to Windows Settings → Apps → Startup.
+  - The main window is created in `App.OnStartup` instead of `StartupUri`, so a start-up launch never flashes the window. `setup.iss` removes the start-up registry entry on uninstall.
 - **Profiles** (`Data/ProfileStore.cs`, `Models/ProfileModel.cs`, `MainWindow.Profiles.cs`). Each profile has its own tasks and its own *Focus* and *Reminders* settings (active-task limit, reminders on/off, "Remind me"). Appearance and widget settings stay shared.
   - Existing tasks become the **Default** profile on first launch; `tasks.json` is not moved. New profiles live in `profiles\<id>\` and copy the focus settings of the most recently created profile.
   - Switch, create, import and export from the **Profiles page** (the letter badge at the bottom of the navigation pane): the open profile with its stats, a card per profile with *Switch*, the profile's focus and reminder settings, and import / export; rename and delete in **Settings → Profiles**. Deleting moves the task file to `profiles\.deleted\` (the last profile can't be deleted).
   - **Reminders cover every profile**, not just the open one; with more than one profile, each reminder names its profile.
 - **Import / export per profile** (`Data/TaskTransfer.cs`). Export as **JSON** (everything, for backups or another PC) or **CSV** (Excel; steps in one cell as `[x]` / `[ ]` lines). Import JSON exports, a raw `tasks.json`, or CSV with a *Title* column; choose *Add to list* or *Replace list*, with **Undo**. Imported tasks respect the profile's active-task limit.
 - Themed dialogs for prompts and confirmations (`Dialogs/`).
-- Tour: a "Separate lists with profiles" step, and a "What's new" entry for profiles and import/export.
+- Tour: a "Separate lists with profiles" step, and "What's new" entries for profiles, import/export and Start with Windows.
 
 ### Changed
 - **Title bar redesigned**: a compact 40 px bar with the app's own minimize / maximize / close buttons (Snap Layouts still work on hover), the profile picker moved to the navigation pane, and the `?` button sized and spaced like the caption buttons. The theme switch moved into the `?` menu. Fixes the theme button overlapping minimize at high display scaling.

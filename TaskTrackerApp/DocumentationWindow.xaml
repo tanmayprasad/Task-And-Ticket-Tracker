@@ -250,6 +250,7 @@
                         </StackPanel>
                         <ItemsControl Style="{StaticResource Bullets}">
                             <sys:String>Open Settings at the bottom of the navigation pane to change the app theme (Use system setting, Dark or Light), and the widget style, theme, text size and opacity. Changes apply and save immediately.</sys:String>
+                            <sys:String>Turn on Settings → Start with Windows to have the app start when you sign in. It opens straight to the desktop widget, with the app in the tray. If Windows shows the switch as turned off, turn it back on in Windows Settings → Apps → Startup.</sys:String>
                             <sys:String>The ? button in the title bar has a quick switch between Dark and Light. The app follows your Windows accent colour, and uses the Mica material on Windows 11.</sys:String>
                         </ItemsControl>
                     </StackPanel>

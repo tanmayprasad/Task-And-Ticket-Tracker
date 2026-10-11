@@ -35,6 +35,13 @@ internal static class Tours
                 Body = "The Profiles page exports a profile's tasks as a JSON file (everything, for backups or another PC) or a CSV spreadsheet for Excel, and imports them into any profile. You can undo an import.",
                 Target = w => Bounds(w, w.NavProfiles),
             }),
+        Release("1.6.0.0", coveredByWelcome: false,
+            new CoachStep
+            {
+                Title = "Start with Windows",
+                Body = "Turn on Settings → Start with Windows and the app starts when you sign in, straight to the desktop widget, so reminders never depend on you opening it.",
+                Target = w => Bounds(w, w.NavSettings),
+            }),
     ];
 
     private static CoachStep ProfilesStep => new()

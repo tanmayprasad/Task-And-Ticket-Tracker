@@ -3,7 +3,8 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap rescap">
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  IgnorableNamespaces="uap rescap desktop">
 
   <Identity
     Name="TanmayPrasad.TaskAndTicketTracker"
@@ -37,6 +38,12 @@
         Square44x44Logo="Images\Square44x44Logo.png">
         <uap:DefaultTile Wide310x150Logo="Images\Wide310x150Logo.png" />
       </uap:VisualElements>
+      <Extensions>
+        <!-- "Start with Windows" (Settings): off until the user turns it on. TaskId must match StartupLauncher.TaskId -->
+        <desktop:Extension Category="windows.startupTask" Executable="TaskTrackerApp.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="TaskTrackerStartup" Enabled="false" DisplayName="Task And Ticket Tracker" />
+        </desktop:Extension>
+      </Extensions>
     </Application>
   </Applications>
 

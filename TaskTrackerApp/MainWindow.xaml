@@ -893,6 +893,24 @@
                             </Grid>
                         </Grid>
                     </Border>
+                    <TextBlock Text="Start-up" Style="{StaticResource BodyStrongText}" Margin="0,20,0,8"/>
+                    <Border Style="{StaticResource SettingRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE7E8;" FontFamily="{StaticResource IconFont}" FontSize="20" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="4,0,20,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Start with Windows" FontSize="14" Foreground="{DynamicResource TextPrimary}"/>
+                                <TextBlock x:Name="StartWithWindowsDesc" Text="Opens the desktop widget when you sign in, so reminders keep working." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Grid Grid.Column="2" VerticalAlignment="Center">
+                                <CheckBox x:Name="StartWithWindowsToggle" Style="{StaticResource ToggleSwitchStyle}" Click="StartWithWindowsToggle_Click" AutomationProperties.Name="Start with Windows"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
                     <TextBlock Text="Desktop widget" Style="{StaticResource BodyStrongText}" Margin="0,20,0,8"/>
                     <Border Style="{StaticResource SettingRow}">
                         <Grid>
