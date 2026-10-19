@@ -222,4 +222,20 @@ public class UiLayoutTests
         Assert.That(Attr(badge, "Background"), Is.Null);
         Assert.That(badge.Descendants(P + "Setter").Any(s => Attr(s, "Property") == "Background"), Is.True);
     }
+
+    // ---- Packaging
+
+    [Test]
+    public void StartupTaskExtension_NamesTheExeInsideThePackageFolder()
+    {
+        // The packaging project rewrites only Application/@Executable to TaskTrackerApp\TaskTrackerApp.exe;
+        // an extension that says plain TaskTrackerApp.exe makes MakeAppx fail in CI.
+        var manifest = XDocument.Load(RepoFile(Path.Combine("..", "TaskTrackerApp.Packaging", "AppxManifest.xml")));
+        var ext = manifest.Descendants()
+            .Where(e => e.Name.LocalName == "Extension" && (string?)e.Attribute("Category") == "windows.startupTask")
+            .ToList();
+
+        Assert.That(ext, Has.Count.EqualTo(1));
+        Assert.That((string?)ext[0].Attribute("Executable"), Is.EqualTo(@"TaskTrackerApp\TaskTrackerApp.exe"));
+    }
 }

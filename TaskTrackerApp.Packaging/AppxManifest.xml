@@ -39,8 +39,10 @@
         <uap:DefaultTile Wide310x150Logo="Images\Wide310x150Logo.png" />
       </uap:VisualElements>
       <Extensions>
-        <!-- "Start with Windows" (Settings): off until the user turns it on. TaskId must match StartupLauncher.TaskId -->
-        <desktop:Extension Category="windows.startupTask" Executable="TaskTrackerApp.exe" EntryPoint="Windows.FullTrustApplication">
+        <!-- "Start with Windows" (Settings): off until the user turns it on. TaskId must match StartupLauncher.TaskId.
+             The packaging project moves the app into a TaskTrackerApp\ folder and rewrites only Application/@Executable, so
+             this Executable must already name that path or MakeAppx fails ("file ... doesn't exist in the package"). -->
+        <desktop:Extension Category="windows.startupTask" Executable="TaskTrackerApp\TaskTrackerApp.exe" EntryPoint="Windows.FullTrustApplication">
           <desktop:StartupTask TaskId="TaskTrackerStartup" Enabled="false" DisplayName="Task And Ticket Tracker" />
         </desktop:Extension>
       </Extensions>

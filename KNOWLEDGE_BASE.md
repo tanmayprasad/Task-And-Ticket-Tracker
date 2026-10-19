@@ -509,7 +509,7 @@ Full setup and steps are in `PACKAGING_CONFIG.md` → *Releasing to the Microsof
 
 Required secrets: `PARTNER_CENTER_TENANT_ID`, `PARTNER_CENTER_SELLER_ID`, `PARTNER_CENTER_CLIENT_ID`, `PARTNER_CENTER_CLIENT_SECRET`. The Store ID `9N34FGG6MWT7` is built into the workflow (overridable by the `STORE_PRODUCT_ID` repository variable). `msstore publish` recreates the draft submission, so the release notes are set **after** it, as Microsoft's documentation requires.
 
-CI pitfalls that were already solved: `windows-latest` lacks the UAP build tools, so the workflow pins `windows-2022`. The `.wapproj` needs `RuntimeIdentifier=win-x64` passed explicitly. The `.msixupload` is a zip, so signtool must not be run on it.
+CI pitfalls that were already solved: `windows-latest` lacks the UAP build tools, so the workflow pins `windows-2022`. The `.wapproj` needs `RuntimeIdentifier=win-x64` passed explicitly. The `.msixupload` is a zip, so signtool must not be run on it. Any manifest extension that names the exe (the `windows.startupTask` one) must use `TaskTrackerApp\TaskTrackerApp.exe`: the packaging project moves the app into that folder but only rewrites `Application/@Executable`, so a plain `TaskTrackerApp.exe` fails MakeAppx with "file ... doesn't exist in the package" (broke the build from 1.6.0.0 until 1.7.0.0; guarded by a test in `UiLayoutTests`). To read a failed run's log without the GitHub CLI, open the job in the browser and search the log for `error`.
 
 ---
 
