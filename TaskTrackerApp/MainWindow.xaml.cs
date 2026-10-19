@@ -728,7 +728,7 @@ public partial class MainWindow : Window
             task.Steps = new System.Collections.ObjectModel.ObservableCollection<TicketStep>();
 
         _editingSteps = new System.Collections.ObjectModel.ObservableCollection<TicketStep>(
-            task.Steps.Select(s => new TicketStep { Id = s.Id, IsDone = s.IsDone, Description = s.Description })
+            task.Steps.Select(s => new TicketStep { Id = s.Id, IsDone = s.IsDone, Description = s.Description, CompletedAt = s.CompletedAt })
         );
         StepsListView.ItemsSource = _editingSteps;
         UpdateStepsHeader();
@@ -790,9 +790,8 @@ public partial class MainWindow : Window
         _currentTask.Title = TitleTextBox.Text.Trim();
         _currentTask.Description = DescriptionTextBox.Text;
         _currentTask.AcceptanceCriteria = AcTextBox.Text;
-        _currentTask.Steps = new System.Collections.ObjectModel.ObservableCollection<TicketStep>(
-            _editingSteps.Select(s => new TicketStep { Id = s.Id, IsDone = s.IsDone, Description = s.Description })
-        );
+        var now = DateTime.Now;
+        _currentTask.Steps = TaskModel.ApplyEditedSteps(_editingSteps, _currentTask.Steps, now);
         _currentTask.TargetDate = CurrentDueValue();
 
         if (isNew)
@@ -814,10 +813,12 @@ public partial class MainWindow : Window
         }
         else
         {
+            bool wasDone = _currentTask.State == "Done";
             if (StateComboBox.SelectedItem is ComboBoxItem stateItem)
             {
                 _currentTask.State = stateItem.Tag?.ToString() ?? stateItem.Content.ToString() ?? "To Do";
             }
+            if (wasDone != (_currentTask.State == "Done")) _currentTask.SyncCompletion(now);
             if (_currentTask.State != "In progress")
             {
                 _currentTask.IsActive = false;
@@ -1282,10 +1283,12 @@ public partial class MainWindow : Window
         }
 
         EnforceActiveTaskRules();
+        foreach (var task in _tasks) task.ClearStaleCompletion();
 
         PersistTasks();
         RefreshGrid();
-        
+        if (DoneLogTabContent?.Visibility == Visibility.Visible) RefreshDoneLog();
+
         _notificationService?.UpdateProfile(_profiles.Active, _tasks);
         UpdateWidgetIfActive();
     }
@@ -1637,15 +1640,42 @@ public partial class MainWindow : Window
         
         task.State = "Done";
         task.IsActive = false;
-        
+        task.SyncCompletion(DateTime.Now);
+
         SaveAndRefresh();
+    }
+
+    /// <summary>Clicking a History card opens that task in the details panel on the Tasks tab.</summary>
+    private void HistoryCard_Click(object sender, MouseButtonEventArgs e) => OpenHistoryEntry(sender);
+
+    private void HistoryCard_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Enter or Key.Space)) return;
+        e.Handled = true;
+        OpenHistoryEntry(sender);
+    }
+
+    private void OpenHistoryEntry(object sender)
+    {
+        if (((FrameworkElement)sender).DataContext is not DoneLogEntry entry) return;
+        var task = _tasks.FirstOrDefault(t => t.Id == entry.Task.Id);
+        if (task != null) OpenTaskDetails(task);
+    }
+
+    private void RefreshDoneLog()
+    {
+        var days = DoneLog.Build(_tasks, DateTime.Now, System.Globalization.CultureInfo.CurrentCulture);
+        DoneLogList.ItemsSource = days;
+        DoneLogEmptyText.Visibility = days.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void Nav_Changed(object sender, RoutedEventArgs e)
     {
-        if (TasksTabContent == null || AboutTabContent == null || SettingsTabContent == null || ProfilesTabContent == null) return;
+        if (TasksTabContent == null || AboutTabContent == null || SettingsTabContent == null || ProfilesTabContent == null || DoneLogTabContent == null) return;
 
         TasksTabContent.Visibility = NavTasks?.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        DoneLogTabContent.Visibility = NavDoneLog?.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        if (NavDoneLog?.IsChecked == true) RefreshDoneLog();
         ProfilesTabContent.Visibility = NavProfiles?.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         AboutTabContent.Visibility = NavAbout?.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         SettingsTabContent.Visibility = NavSettings?.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
@@ -1654,6 +1684,7 @@ public partial class MainWindow : Window
         if (NavSettings?.IsChecked == true || NavProfiles?.IsChecked == true) LoadSettingsIntoControls();
 
         UIElement page = NavTasks?.IsChecked == true ? TasksTabContent
+            : NavDoneLog?.IsChecked == true ? DoneLogTabContent
             : NavProfiles?.IsChecked == true ? ProfilesTabContent
             : NavAbout?.IsChecked == true ? AboutTabContent
             : SettingsTabContent;
@@ -1795,6 +1826,35 @@ public partial class MainWindow : Window
 
     private Point _stepsDragStartPoint;
     private TicketStep? _draggedStep;
+
+    /// <summary>The steps list has its own ScrollViewer that swallows the wheel; hand it to the form's scroller unless the list can still scroll that way.</summary>
+    private void StepsListView_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (e.Handled) return;
+        var list = (ListView)sender;
+        var inner = FindVisualChild<ScrollViewer>(list);
+        if (inner != null && inner.ScrollableHeight > 0)
+        {
+            bool canScroll = e.Delta > 0 ? inner.VerticalOffset > 0 : inner.VerticalOffset < inner.ScrollableHeight;
+            if (canScroll) return;
+        }
+
+        e.Handled = true;
+        var forwarded = new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta) { RoutedEvent = UIElement.MouseWheelEvent, Source = sender };
+        (FindVisualParent<UIElement>(list) as UIElement)?.RaiseEvent(forwarded);
+    }
+
+    private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+    {
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+            if (child is T match) return match;
+            var nested = FindVisualChild<T>(child);
+            if (nested != null) return nested;
+        }
+        return null;
+    }
 
     private void StepsListView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {

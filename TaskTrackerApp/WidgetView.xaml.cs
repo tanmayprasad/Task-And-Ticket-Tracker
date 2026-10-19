@@ -32,6 +32,8 @@ public partial class WidgetView : Window, IWidgetPresenter
     private List<TaskModel> _activeTasks = new();
     private int _currentIndex = 0;
     private int _currentStepIndex = 0;
+    // True once the user pages through the steps themselves; until then the widget always shows the first open step
+    private bool _userPickedStep;
 
     public event EventHandler<TaskModel>? OnSkipRequested;
     public event EventHandler? OnResetRequested;
@@ -65,6 +67,12 @@ public partial class WidgetView : Window, IWidgetPresenter
             }
         }
 
+        // Same task, no manual step browsing: re-aim at the first open step (steps may have changed in the main window)
+        bool sameTask = currentTaskId != Guid.Empty && _activeTasks.Count > 0 && _activeTasks[_currentIndex].Id == currentTaskId;
+        if (!sameTask) _userPickedStep = false;
+        if (_activeTasks.Count > 0)
+            _currentStepIndex = WidgetText.StepIndexOnRefresh(_activeTasks[_currentIndex], _currentStepIndex, _userPickedStep);
+
         RefreshCarousel();
     }
 
@@ -75,7 +83,8 @@ public partial class WidgetView : Window, IWidgetPresenter
         if (index >= 0 && index != _currentIndex)
         {
             _currentIndex = index;
-            _currentStepIndex = 0;
+            _userPickedStep = false;
+            _currentStepIndex = WidgetText.FirstIncompleteStepIndex(_activeTasks[_currentIndex]);
             RefreshCarousel();
         }
     }
@@ -360,7 +369,8 @@ public partial class WidgetView : Window, IWidgetPresenter
         if (_activeTasks.Count <= 1) return;
         _currentIndex--;
         if (_currentIndex < 0) _currentIndex = _activeTasks.Count - 1;
-        _currentStepIndex = 0;
+        _userPickedStep = false;
+        _currentStepIndex = WidgetText.FirstIncompleteStepIndex(_activeTasks[_currentIndex]);
         RefreshCarousel();
     }
 
@@ -369,7 +379,8 @@ public partial class WidgetView : Window, IWidgetPresenter
         if (_activeTasks.Count <= 1) return;
         _currentIndex++;
         if (_currentIndex >= _activeTasks.Count) _currentIndex = 0;
-        _currentStepIndex = 0;
+        _userPickedStep = false;
+        _currentStepIndex = WidgetText.FirstIncompleteStepIndex(_activeTasks[_currentIndex]);
         RefreshCarousel();
     }
 
@@ -379,6 +390,7 @@ public partial class WidgetView : Window, IWidgetPresenter
         var task = _activeTasks[_currentIndex];
         if (task.Steps == null || task.Steps.Count <= 1) return;
         
+        _userPickedStep = true;
         _currentStepIndex--;
         if (_currentStepIndex < 0) _currentStepIndex = task.Steps.Count - 1;
         RefreshCarousel();
@@ -390,6 +402,7 @@ public partial class WidgetView : Window, IWidgetPresenter
         var task = _activeTasks[_currentIndex];
         if (task.Steps == null || task.Steps.Count <= 1) return;
         
+        _userPickedStep = true;
         _currentStepIndex++;
         if (_currentStepIndex >= task.Steps.Count) _currentStepIndex = 0;
         RefreshCarousel();
@@ -402,6 +415,7 @@ public partial class WidgetView : Window, IWidgetPresenter
         if (task.Steps != null && task.Steps.Count > 0 && _currentStepIndex < task.Steps.Count)
         {
             task.Steps[_currentStepIndex].IsDone = WidgetStepCheckBox.IsChecked ?? false;
+            task.Steps[_currentStepIndex].SyncCompletion(DateTime.Now);
             
             // Auto-advance to the first incomplete priority step
             if (task.Steps[_currentStepIndex].IsDone)
@@ -418,6 +432,7 @@ public partial class WidgetView : Window, IWidgetPresenter
                 
                 if (nextIndex != -1) 
                 {
+                    _userPickedStep = false;
                     _currentStepIndex = nextIndex;
                 }
             }

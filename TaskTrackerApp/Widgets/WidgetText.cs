@@ -10,6 +10,24 @@ public static class WidgetText
     public static TicketStep? CurrentStep(TaskModel task) =>
         task.Steps?.FirstOrDefault(s => !s.IsDone);
 
+    /// <summary>Index of the top unmarked step; 0 when there are no steps or all are done.</summary>
+    public static int FirstIncompleteStepIndex(TaskModel task)
+    {
+        if (task.Steps == null) return 0;
+        for (int i = 0; i < task.Steps.Count; i++)
+            if (!task.Steps[i].IsDone) return i;
+        return 0;
+    }
+
+    /// <summary>
+    /// Step to show after the task list is pushed to the widget (e.g. on minimize): the first open step, unless the
+    /// user paged to a step themselves and it still exists.
+    /// </summary>
+    public static int StepIndexOnRefresh(TaskModel task, int currentIndex, bool userPickedStep) =>
+        userPickedStep && task.Steps != null && currentIndex >= 0 && currentIndex < task.Steps.Count
+            ? currentIndex
+            : FirstIncompleteStepIndex(task);
+
     /// <summary>"#123" or empty when the task has no ticket number.</summary>
     public static string TicketLabel(TaskModel task) =>
         string.IsNullOrWhiteSpace(task.VstsNumber) ? string.Empty : $"#{task.VstsNumber.Trim()}";

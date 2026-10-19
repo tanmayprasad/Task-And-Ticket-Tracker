@@ -228,6 +228,7 @@ public partial class TaskbarStripView : Window, IWidgetPresenter
         if (step != null)
         {
             step.IsDone = true;
+            step.SyncCompletion(DateTime.Now);
             _mainWindow.NotifyTaskUpdatedFromWidget(task);
             _mainWindow.SaveAndRefresh(); // pushes the updated tasks back to us
         }

@@ -9,7 +9,7 @@ When using the MSIX Packaging Tool, use the following details:
 *   **Package display name:** `TanmayPrasad.TaskAndTicketTracker_5njg6p2f7v32e`
 *   **Publisher name:** `CN=00F61C64-FF38-455E-8D55-F7094707F364`
 *   **Publisher display name:** `Tanmay Prasad`
-*   **Version:** the value in `TaskTrackerApp.Packaging/AppxManifest.xml` (currently `1.6.0.0`, the latest Store release)
+*   **Version:** the value in `TaskTrackerApp.Packaging/AppxManifest.xml` (currently `1.7.0.0`, the latest Store release)
 *   **Package Description:** `Task And Ticket Tracker is a lightweight, context-aw` (Note: ensure it matches the store listing if required)
 
 ## Past Validation Feedbacks (Partner Center Errors)
@@ -41,6 +41,28 @@ Use `scripts/Set-Version.ps1` for both: `-Version 1.4.3.7` for the next developm
 2.  `TaskTrackerApp/MainWindow.xaml` → About tab `Version: x.y.z.w` text
 3.  `CHANGELOG.md`
 4.  `setup.iss` → `AppVersion` and `OutputBaseFilename` (only needed when building the installer)
+
+## Preparing a test MSIX (sideload) with GitHub
+
+The package cannot be built on the development PC: it needs the Visual Studio *Windows Application Packaging* (`.wapproj`) targets, which are only installed on the GitHub runner (`windows-2022`). So a test package is always built by CI.
+
+1.  **Finish the code and the version.** Tests pass (`dotnet test`), and the version is set with `scripts/Set-Version.ps1` (for a release candidate: `-Version x.y.z.0 -Release`; `scripts/Test-ReleaseVersion.ps1 -Version x.y.z.0` should say it is ready).
+2.  **Commit and push to `main`.** Do not tag yet.
+    ```powershell
+    git add -A            # check `git status` first; MSIX/, Releases/ and bin/obj are git-ignored
+    git commit -m "Release x.y.z.0"
+    git push origin main
+    ```
+3.  **CI builds it.** `.github/workflows/build-msix.yml` runs on every push to `main`: unit tests, a `StoreUpload` build, and a self-signed `.msixbundle`. Open the run under the repository's **Actions** tab (about 5-10 minutes).
+4.  **Download the artifact `TaskTrackerApp-MSIX`** from the finished run (it holds the `.msixupload`, the `.msixbundle` and `TaskTrackerCert.cer`). Unzip it into `MSIX\TaskTrackerApp-MSIX x.y.z.0\`, keeping the earlier folders for reference.
+5.  **Install and test it:**
+    ```powershell
+    ./scripts/Install-TestPackage.ps1 -PackageFolder "D:\One App\Tasks\Tasks_v1\MSIX\TaskTrackerApp-MSIX x.y.z.0"
+    ```
+    It asks for administrator rights, trusts the throw-away certificate, stops a running copy and installs the bundle. Walk through the release's new features, the first-run "What's new" tour and the tabs before going on.
+6.  **Release.** When the test package is good, follow *Releasing a version* below (tag `vx.y.z.0`). The tag build creates the Store `.msixupload` and waits for your approval before submitting. The `.msixupload` from step 4 is the same kind of package and can also be uploaded by hand in Partner Center.
+
+If the run fails, open the failed step in the run log; the common causes are listed in `KNOWLEDGE_BASE.md` (§11, *CI pitfalls*).
 
 ## Releasing to the Microsoft Store
 

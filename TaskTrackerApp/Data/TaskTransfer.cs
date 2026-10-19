@@ -282,9 +282,24 @@ public static class TaskTransfer
         target.Description = source.Description;
         target.AcceptanceCriteria = source.AcceptanceCriteria;
         target.TargetDate = source.TargetDate;
+        bool wasDone = target.State == "Done";
+        var oldSteps = target.Steps.ToList();
         target.State = source.State;
-        target.Steps = new System.Collections.ObjectModel.ObservableCollection<TicketStep>(
-            source.Steps.Select(s => new TicketStep { Id = s.Id, Description = s.Description, IsDone = s.IsDone }));
+        // CSV files carry no completion times: keep the ones already recorded, and stamp real transitions
+        if (source.CompletedAt != null) target.CompletedAt = source.CompletedAt;
+        else if (wasDone != (target.State == "Done")) target.CompletedAt = null;
+        target.SyncCompletion(DateTime.Now);
+        target.Steps = new System.Collections.ObjectModel.ObservableCollection<TicketStep>(source.Steps.Select(s =>
+        {
+            var old = oldSteps.FirstOrDefault(o => o.Id == s.Id) ?? oldSteps.FirstOrDefault(o => o.Description == s.Description);
+            var step = new TicketStep
+            {
+                Id = s.Id, Description = s.Description, IsDone = s.IsDone,
+                CompletedAt = s.CompletedAt ?? (old != null && old.IsDone == s.IsDone ? old.CompletedAt : null),
+            };
+            if (step.IsDone && step.CompletedAt == null && (old == null || !old.IsDone)) step.SyncCompletion(DateTime.Now);
+            return step;
+        }));
         if (target.State != "In progress") target.IsActive = false; // only In progress tasks can be active
     }
 

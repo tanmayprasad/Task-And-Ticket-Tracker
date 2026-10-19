@@ -9,6 +9,10 @@
                     xmlns:theming="clr-namespace:TaskTrackerApp.Theming">
 
     <sys:Double x:Key="ControlHeight">32</sys:Double>
+    <!-- Page frame shared by every tab: content 1200 (PageContentWidth) + 2 x 28 gutter = 1256 (PageMaxWidth, for hosts that carry their own inner margin), centred beside the sidebar; narrower windows go fluid -->
+    <sys:Double x:Key="PageContentWidth">1200</sys:Double>
+    <sys:Double x:Key="PageMaxWidth">1256</sys:Double>
+    <Thickness x:Key="PageGutter">28,16,28,28</Thickness>
     <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
     <!-- ============================================================ Typography -->
@@ -35,6 +39,16 @@
     <Style x:Key="CaptionText" TargetType="TextBlock">
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="Foreground" Value="{DynamicResource TextMuted}"/>
+    </Style>
+    <!-- Page frame: every tab starts with PageTitle (+ PageSubtitle) at the same position -->
+    <Style x:Key="PageTitle" TargetType="TextBlock" BasedOn="{StaticResource TitleText}">
+        <Setter Property="AutomationProperties.HeadingLevel" Value="Level1"/>
+    </Style>
+    <Style x:Key="PageSubtitle" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
+        <Setter Property="Margin" Value="0,4,0,0"/>
+    </Style>
+    <Style x:Key="SectionHeader" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongText}">
+        <Setter Property="AutomationProperties.HeadingLevel" Value="Level2"/>
     </Style>
     <Style x:Key="FieldLabel" TargetType="TextBlock">
         <Setter Property="FontSize" Value="12"/>

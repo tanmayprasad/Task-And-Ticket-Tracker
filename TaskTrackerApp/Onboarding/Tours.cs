@@ -42,6 +42,13 @@ internal static class Tours
                 Body = "Turn on Settings → Start with Windows and the app starts when you sign in, straight to the desktop widget, so reminders never depend on you opening it.",
                 Target = w => Bounds(w, w.NavSettings),
             }),
+        Release("1.7.0.0", coveredByWelcome: false,
+            new CoachStep
+            {
+                Title = "History of what you finished",
+                Body = "The new History page lists the tasks you finished and the steps you ticked today, yesterday and the three days before. Click a row to open that task.",
+                Target = w => Bounds(w, w.NavDoneLog),
+            }),
     ];
 
     private static CoachStep ProfilesStep => new()

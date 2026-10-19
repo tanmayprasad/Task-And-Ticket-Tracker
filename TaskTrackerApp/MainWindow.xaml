@@ -99,6 +99,12 @@
                             <TextBlock Text="Tasks" VerticalAlignment="Center" Margin="14,0,0,0"/>
                         </StackPanel>
                     </RadioButton>
+                    <RadioButton x:Name="NavDoneLog" Style="{StaticResource NavItem}" Checked="Nav_Changed" ToolTip="History" AutomationProperties.Name="History">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE81C;" FontFamily="{StaticResource IconFont}" FontSize="16" Width="20" TextAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="History" VerticalAlignment="Center" Margin="14,0,0,0"/>
+                        </StackPanel>
+                    </RadioButton>
                 </StackPanel>
                 <StackPanel Grid.Row="2" Margin="0,0,0,8">
                     <Border Height="1" Background="{DynamicResource DividerStroke}" Margin="12,4,12,6"/>
@@ -131,8 +137,128 @@
             <Border x:Name="ContentLayer" Grid.Column="1" Background="{DynamicResource LayerBackground}" BorderBrush="{DynamicResource CardStroke}"
                     BorderThickness="1,1,0,0" CornerRadius="8,0,0,0">
             <Grid>
+                <!-- History: what was finished today, yesterday and the days before -->
+                <Grid x:Name="DoneLogTabContent" Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="{StaticResource PageGutter}" MaxWidth="{StaticResource PageContentWidth}" HorizontalAlignment="Stretch">
+                            <TextBlock Text="History" Style="{StaticResource PageTitle}"/>
+                            <TextBlock Text="What you finished today, yesterday and the three days before." Style="{StaticResource PageSubtitle}" Margin="0,4,0,16"/>
+
+                            <StackPanel x:Name="DoneLogEmptyText" HorizontalAlignment="Center" Margin="0,64,0,0" Visibility="Collapsed">
+                                <TextBlock Text="&#xE81C;" FontFamily="{StaticResource IconFont}" FontSize="48" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Nothing completed yet" Style="{StaticResource SubtitleText}" HorizontalAlignment="Center" Margin="0,12,0,4"/>
+                                <TextBlock Text="Tick a step or mark a task Done and it shows up here." Style="{StaticResource BodyText}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+
+                            <ItemsControl x:Name="DoneLogList" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,0,0,24">
+                                            <Grid Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Header}" Style="{StaticResource SectionHeader}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding CountText}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </Grid>
+                                            <Border Height="1" Background="{DynamicResource DividerStroke}" Margin="0,0,0,6"/>
+                                            <ItemsControl ItemsSource="{Binding Entries}" Focusable="False">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,2"
+                                                                Cursor="Hand" Focusable="True" FocusVisualStyle="{x:Null}" ToolTip="Open this task"
+                                                                AutomationProperties.Name="{Binding Task.Title, StringFormat=Open task {0}}"
+                                                                MouseLeftButtonUp="HistoryCard_Click" KeyDown="HistoryCard_KeyDown">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Background" Value="Transparent"/>
+                                                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                                                    <Style.Triggers>
+                                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                                            <Setter Property="Background" Value="{DynamicResource SubtleFill}"/>
+                                                                        </Trigger>
+                                                                        <Trigger Property="IsKeyboardFocused" Value="True">
+                                                                            <Setter Property="BorderBrush" Value="{DynamicResource AccentText}"/>
+                                                                        </Trigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <StackPanel>
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="86"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <Border Grid.Column="0" CornerRadius="10" Padding="10,2" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,8,0">
+                                                                        <TextBlock Text="{Binding Task.State}" FontSize="12" FontWeight="SemiBold">
+                                                                            <TextBlock.Style>
+                                                                                <Style TargetType="TextBlock">
+                                                                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+                                                                                    <Style.Triggers>
+                                                                                        <DataTrigger Binding="{Binding Task.State}" Value="In progress">
+                                                                                            <Setter Property="Foreground" Value="{DynamicResource WarningColor}"/>
+                                                                                        </DataTrigger>
+                                                                                        <DataTrigger Binding="{Binding Task.State}" Value="Done">
+                                                                                            <Setter Property="Foreground" Value="{DynamicResource SuccessColor}"/>
+                                                                                        </DataTrigger>
+                                                                                    </Style.Triggers>
+                                                                                </Style>
+                                                                            </TextBlock.Style>
+                                                                        </TextBlock>
+                                                                        <Border.Style>
+                                                                            <Style TargetType="Border">
+                                                                                <Setter Property="Background" Value="{DynamicResource SubtleFill}"/>
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding Task.State}" Value="In progress">
+                                                                                        <Setter Property="Background" Value="{DynamicResource WarningBackground}"/>
+                                                                                    </DataTrigger>
+                                                                                    <DataTrigger Binding="{Binding Task.State}" Value="Done">
+                                                                                        <Setter Property="Background" Value="{DynamicResource SuccessBackground}"/>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </Border.Style>
+                                                                    </Border>
+                                                                    <TextBlock Grid.Column="1" Text="{Binding Task.VstsNumber, StringFormat=#{0}}" Style="{StaticResource CaptionText}"
+                                                                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                                    <TextBlock Grid.Column="2" Text="{Binding Task.Title}" ToolTip="{Binding Task.Title}" Style="{StaticResource BodyStrongText}"
+                                                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="560"/>
+                                                                    <TextBlock Grid.Column="3" Text="{Binding StepsText}" Style="{StaticResource CaptionText}" HorizontalAlignment="Right"
+                                                                               VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                                                </Grid>
+                                                                <ItemsControl ItemsSource="{Binding Steps}" Focusable="False" Margin="94,6,0,0">
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <Grid Margin="0,2,0,0">
+                                                                                <Grid.ColumnDefinitions>
+                                                                                    <ColumnDefinition Width="Auto"/>
+                                                                                    <ColumnDefinition Width="*"/>
+                                                                                </Grid.ColumnDefinitions>
+                                                                                <TextBlock Text="&#xE73E;" FontFamily="{StaticResource IconFont}" FontSize="12"
+                                                                                           Foreground="{DynamicResource SuccessColor}" VerticalAlignment="Top" Margin="0,3,8,0"/>
+                                                                                <TextBlock Grid.Column="1" Text="{Binding Description}" Style="{StaticResource BodyText}" TextWrapping="Wrap"/>
+                                                                            </Grid>
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
                 <!-- Task Manager Tab -->
-                <Grid x:Name="TasksTabContent" Visibility="Visible">
+                <Grid x:Name="TasksTabContent" Visibility="Visible" MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
@@ -145,7 +271,7 @@
 
                     <!-- Task List -->
                     <Border Grid.Row="0" Grid.Column="0" Background="Transparent">
-                        <Grid Margin="28,10,28,20">
+                        <Grid Margin="{StaticResource PageGutter}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
@@ -153,22 +279,25 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                 
-                <Grid Grid.Row="0" Margin="0,0,0,15">
+                <Grid Grid.Row="0" Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Tasks" Style="{StaticResource TitleText}" VerticalAlignment="Center"/>
-                    <Button x:Name="NewTaskButton" Grid.Column="1" Style="{StaticResource PrimaryButton}" Click="NewTaskButton_Click" ToolTip="New task (Ctrl+N)" AutomationProperties.Name="New task">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="Tasks" Style="{StaticResource PageTitle}"/>
+                        <TextBlock Text="Your tasks, in priority order." Style="{StaticResource PageSubtitle}"/>
+                    </StackPanel>
+                    <Button x:Name="NewTaskButton" Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="16,2,0,0" Style="{StaticResource PrimaryButton}" Click="NewTaskButton_Click" ToolTip="New task (Ctrl+N)" AutomationProperties.Name="New task">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock Text="New task" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                 </Grid>
                 
                 <!-- Quick add: type a title and press Enter -->
-                <Border x:Name="QuickAddBox" Grid.Row="1" Margin="0,0,0,12" Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardStroke}" BorderThickness="1" CornerRadius="6">
+                <Border x:Name="QuickAddBox" Grid.Row="1" Margin="0,0,0,12" Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource CardStroke}" BorderThickness="1" CornerRadius="8">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -193,26 +322,26 @@
                     </Grid.ColumnDefinitions>
                     <TextBox x:Name="FilterVstsTextBox" Grid.Column="0" TextChanged="Filter_Changed" theming:TextBoxHelper.Placeholder="Search ticket or title…" Foreground="{DynamicResource TextPrimary}" AutomationProperties.Name="Search tasks" ToolTip="Search by ticket number or title (Ctrl+F)"/>
                     
-                    <ToggleButton x:Name="FilterStateToggle" Grid.Column="2" Padding="10,5" Style="{StaticResource ModernButton}" VerticalAlignment="Center" ToolTip="Filter by state" AutomationProperties.Name="Filter by state">
+                    <ToggleButton x:Name="FilterStateToggle" Grid.Column="2" Padding="10,5" Style="{StaticResource StandardButton}" VerticalAlignment="Center" ToolTip="Filter by state" AutomationProperties.Name="Filter by state">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="States" FontSize="13" VerticalAlignment="Center"/>
-                            <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Margin="8,1,0,0"/>
+                            <TextBlock Text="&#xE70D;" FontFamily="{StaticResource IconFont}" FontSize="10" VerticalAlignment="Center" Margin="8,1,0,0"/>
                         </StackPanel>
                     </ToggleButton>
                     <Popup IsOpen="{Binding IsChecked, ElementName=FilterStateToggle}" StaysOpen="False" PlacementTarget="{Binding ElementName=FilterStateToggle}">
                         <Border Background="{DynamicResource ControlBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="5" CornerRadius="6">
                             <StackPanel>
-                                <CheckBox x:Name="FilterStateToDo" IsChecked="True" Click="Filter_Changed" Margin="2,4">
+                                <CheckBox x:Name="FilterStateToDo" AutomationProperties.Name="Show To Do tasks" IsChecked="True" Click="Filter_Changed" Margin="2,4">
                                     <Border CornerRadius="12" Padding="8,4" Background="{DynamicResource ControlHover}" HorizontalAlignment="Left" MinWidth="80">
                                         <TextBlock Text="To Do" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}" HorizontalAlignment="Center"/>
                                     </Border>
                                 </CheckBox>
-                                <CheckBox x:Name="FilterStateInProgress" IsChecked="True" Click="Filter_Changed" Margin="2,4">
+                                <CheckBox x:Name="FilterStateInProgress" AutomationProperties.Name="Show In progress tasks" IsChecked="True" Click="Filter_Changed" Margin="2,4">
                                     <Border CornerRadius="12" Padding="8,4" Background="{DynamicResource WarningBackground}" HorizontalAlignment="Left" MinWidth="80">
                                         <TextBlock Text="In progress" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource WarningColor}" HorizontalAlignment="Center"/>
                                     </Border>
                                 </CheckBox>
-                                <CheckBox x:Name="FilterStateDone" IsChecked="False" Click="Filter_Changed" Margin="2,4">
+                                <CheckBox x:Name="FilterStateDone" AutomationProperties.Name="Show Done tasks" IsChecked="False" Click="Filter_Changed" Margin="2,4">
                                     <Border CornerRadius="12" Padding="8,4" Background="{DynamicResource SuccessBackground}" HorizontalAlignment="Left" MinWidth="80">
                                         <TextBlock Text="Done" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SuccessColor}" HorizontalAlignment="Center"/>
                                     </Border>
@@ -414,7 +543,7 @@
                             <TextBlock x:Name="DetailsHeaderText" Text="Task details" Style="{StaticResource SubtitleText}" VerticalAlignment="Center"/>
                             <TextBlock x:Name="DetailsHeaderCaption" Text="Task details" Style="{StaticResource CaptionText}" VerticalAlignment="Bottom" Margin="12,0,0,3" Visibility="Collapsed"/>
                         </StackPanel>
-                        <Button x:Name="MaximizeDetailsButton" Content="&#xE922;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" HorizontalAlignment="Right" Click="ToggleMaximize_Click" Cursor="Hand" ToolTip="Expand details" AutomationProperties.Name="Expand or restore details" FontSize="14" Padding="5"/>
+                        <Button x:Name="MaximizeDetailsButton" Content="&#xE922;" FontFamily="{StaticResource IconFont}" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" HorizontalAlignment="Right" Click="ToggleMaximize_Click" Cursor="Hand" ToolTip="Expand details" AutomationProperties.Name="Expand or restore details" FontSize="14" Padding="5"/>
                     </Grid>
 
                     <ScrollViewer x:Name="DetailsScroll" Grid.Row="1" Padding="0,0,20,0">
@@ -428,7 +557,7 @@
                                 <!-- 1. Title -->
                                 <StackPanel x:Name="TitleSection">
                                     <Grid Margin="0,0,0,8">
-                                        <TextBlock Text="Title *" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left" x:Name="TitleLabel"/>
+                                        <TextBlock Text="Title *"  HorizontalAlignment="Left" x:Name="TitleLabel" Style="{StaticResource FieldLabel}" Margin="0"/>
                                         <TextBlock Text="{Binding ElementName=TitleTextBox, Path=Text.Length, StringFormat={}{0}/100}" Visibility="{Binding ElementName=TitleTextBox, Path=Text.Length, Converter={StaticResource NearLimitVis}, ConverterParameter=100}" Foreground="{DynamicResource TextMuted}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
                                     </Grid>
                                     <TextBox x:Name="TitleTextBox" Margin="0,0,0,5" MaxLength="100" FontSize="14" AutomationProperties.Name="Title"/>
@@ -438,7 +567,7 @@
                                 <!-- 2. Steps (what the widget shows) -->
                                 <StackPanel x:Name="StepsSection" Margin="0,16,0,0">
                                     <Grid Margin="0,0,0,8">
-                                        <TextBlock Text="Steps" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left"/>
+                                        <TextBlock Text="Steps"  HorizontalAlignment="Left" Style="{StaticResource FieldLabel}" Margin="0"/>
                                         <TextBlock x:Name="StepsProgressText" Foreground="{DynamicResource TextMuted}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
                                     </Grid>
                                     <Grid Margin="0,0,0,6">
@@ -448,11 +577,12 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBox x:Name="NewStepTextBox" Grid.Column="0" Margin="0,0,8,0" theming:TextBoxHelper.Placeholder="Add a step and press Enter" KeyDown="NewStepTextBox_KeyDown" MaxLength="100" AutomationProperties.Name="New step"
                                                  ToolTip="Press Enter to add. Paste a list to add one step per line."/>
-                                        <Button Grid.Column="1" Style="{StaticResource ModernButton}" Click="AddNewStep_Click" Padding="10,5" ToolTip="Add step (Enter)" AutomationProperties.Name="Add step">
-                                            <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12"/>
+                                        <Button Grid.Column="1" Style="{StaticResource StandardButton}" Click="AddNewStep_Click" Padding="10,5" ToolTip="Add step (Enter)" AutomationProperties.Name="Add step">
+                                            <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}" FontSize="12"/>
                                         </Button>
                                     </Grid>
                                 <ListView x:Name="StepsListView" Margin="0,0,0,4" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  PreviewMouseWheel="StepsListView_PreviewMouseWheel"
                                   AllowDrop="True" PreviewMouseLeftButtonDown="StepsListView_PreviewMouseLeftButtonDown" MouseMove="StepsListView_MouseMove" DragEnter="StepsListView_DragEnter" Drop="StepsListView_Drop">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
@@ -492,13 +622,13 @@
                                                        Foreground="{DynamicResource TextMuted}" FontSize="14" ToolTip="Drag to reorder"/>
                                         </Border>
                                                    
-                                        <CheckBox x:Name="StepCheckBox" Grid.Column="1" IsChecked="{Binding IsDone}" VerticalAlignment="Center" Margin="0,0,6,0" Click="StepCheckBox_Click"/>
+                                        <CheckBox x:Name="StepCheckBox" AutomationProperties.Name="Step done" Grid.Column="1" IsChecked="{Binding IsDone}" VerticalAlignment="Center" Margin="0,0,6,0" Click="StepCheckBox_Click"/>
                                         
-                                        <TextBox x:Name="StepTextBox" Grid.Column="2" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" MinHeight="28" Padding="4,2" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" VerticalAlignment="Center" Margin="0,0,10,0" MaxLength="100"/>
+                                        <TextBox x:Name="StepTextBox" AutomationProperties.Name="Step description" Grid.Column="2" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" MinHeight="28" Padding="4,2" Background="Transparent" Foreground="{DynamicResource TextPrimary}" BorderThickness="0" VerticalAlignment="Center" Margin="0,0,10,0" MaxLength="100"/>
                                                  
-                                        <Button Grid.Column="3" Content="&#xE74D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" 
+                                        <Button Grid.Column="3" Content="&#xE74D;" FontFamily="{StaticResource IconFont}" 
                                                 Style="{StaticResource DangerButton}" BorderThickness="0" Background="Transparent" 
-                                                Padding="4" Margin="4,0,0,0" ToolTip="Remove Step" Click="RemoveStepButton_Click"/>
+                                                Padding="4" Margin="4,0,0,0" ToolTip="Remove step" AutomationProperties.Name="Remove step" Click="RemoveStepButton_Click"/>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -509,7 +639,7 @@
                                 <!-- 3. Planning (moves to the right column in the full-width layout) -->
                                 <StackPanel x:Name="PlanningSection" Margin="0,16,0,0">
                                     <StackPanel x:Name="TicketField">
-                                        <TextBlock Text="Ticket number" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Ticket number"  Margin="0,0,0,8" Style="{StaticResource FieldLabel}"/>
                                         <Grid Margin="0,0,0,18">
                                             <TextBox x:Name="VstsTextBox" MaxLength="50" AutomationProperties.Name="Ticket number" ToolTip="Leave empty to use the automatic number. The number can't be changed after the task is saved."/>
                                         </Grid>
@@ -522,7 +652,7 @@
                                         </Grid.RowDefinitions>
                                         <!-- Existing tasks: State -->
                                         <StackPanel x:Name="StatePanel" Grid.Column="0">
-                                            <TextBlock Text="State" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                            <TextBlock Text="State"  Margin="0,0,0,8" Style="{StaticResource FieldLabel}"/>
                                             <ComboBox x:Name="StateComboBox" Padding="8">
                                                 <ComboBoxItem Tag="To Do">
                                                     <Border CornerRadius="12" Padding="8,4" Background="{DynamicResource ControlHover}" HorizontalAlignment="Left">
@@ -543,7 +673,7 @@
                                         </StackPanel>
                                         <!-- New tasks: Start now -->
                                         <StackPanel x:Name="StartNowPanel" Grid.Column="0" Visibility="Collapsed">
-                                            <TextBlock Text="Start now" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                            <TextBlock Text="Start now"  Margin="0,0,0,8" Style="{StaticResource FieldLabel}"/>
                                             <StackPanel Orientation="Horizontal">
                                                 <CheckBox x:Name="StartNowToggle" Style="{StaticResource ToggleSwitchStyle}" VerticalAlignment="Center" AutomationProperties.Name="Start now"
                                                           ToolTip="On: the task becomes active (In progress) and shows on the widget. Off: it waits as To Do."/>
@@ -554,8 +684,8 @@
                                         <!-- Existing tasks: Priority -->
                                         <StackPanel x:Name="PriorityPanel" Grid.Row="1" Margin="0,14,0,0">
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                <TextBlock Text="Priority" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold"/>
-                                                <TextBlock Text="&#xE946;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="5,0,0,0" ToolTip="Drag the task in the list to change its priority." Cursor="Help"/>
+                                                <TextBlock Text="Priority" Style="{StaticResource FieldLabel}" Margin="0"/>
+                                                <TextBlock Text="&#xE946;" FontFamily="{StaticResource IconFont}" Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="5,0,0,0" ToolTip="Drag the task in the list to change its priority." Cursor="Help"/>
                                             </StackPanel>
                                             <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderLight}" BorderThickness="1" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="10,8" ToolTip="Drag the task in the list to change its priority">
                                                 <TextBlock x:Name="PriorityText" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
@@ -563,7 +693,7 @@
                                         </StackPanel>
                                         <!-- New tasks: where to put it in the list -->
                                         <StackPanel x:Name="PositionPanel" Grid.Row="1" Margin="0,14,0,0" Visibility="Collapsed">
-                                            <TextBlock Text="Add to" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                            <TextBlock Text="Add to"  Margin="0,0,0,8" Style="{StaticResource FieldLabel}"/>
                                             <Border Background="{DynamicResource ControlBackground}" BorderBrush="{DynamicResource BorderLight}" BorderThickness="1" CornerRadius="6" Padding="2" HorizontalAlignment="Left">
                                                 <StackPanel Orientation="Horizontal">
                                                     <RadioButton x:Name="PositionTopRadio" GroupName="NewTaskPosition" Content="Top" Style="{StaticResource SegmentRadio}" ToolTip="Highest priority (#1)" AutomationProperties.Name="Add to top of list"/>
@@ -573,11 +703,11 @@
                                         </StackPanel>
                                     </Grid>
 
-                                    <TextBlock Text="Due date" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="Due date"  Margin="0,0,0,8" Style="{StaticResource FieldLabel}"/>
                                     <Grid Margin="0,0,0,8">
-                                        <Button x:Name="DueDateButton" Style="{StaticResource ModernButton}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="10,7" Click="DueDateButton_Click" AutomationProperties.Name="Pick due date">
+                                        <Button x:Name="DueDateButton" Style="{StaticResource StandardButton}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="10,7" Click="DueDateButton_Click" AutomationProperties.Name="Pick due date">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="&#xE787;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                                <TextBlock Text="&#xE787;" FontFamily="{StaticResource IconFont}" FontSize="14" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                                 <TextBlock x:Name="DueDateText" Text="No due date" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
@@ -590,25 +720,25 @@
                                         <Button Content="Next week" Style="{StaticResource ChipButton}" Click="DueNextWeek_Click" ToolTip="Monday next week"/>
                                         <Button x:Name="DueClearChip" Content="Clear" Style="{StaticResource ChipButton}" Click="DueClear_Click" Visibility="Collapsed"/>
                                     </WrapPanel>
-                                    <Button x:Name="AddTimeButton" Content="+ Add a time" Style="{StaticResource ModernButton}" Background="Transparent" Foreground="{DynamicResource PrimaryBackground}" HorizontalAlignment="Left" Padding="4,2" Margin="0,0,0,12" Click="AddTime_Click" Visibility="Collapsed"
+                                    <Button x:Name="AddTimeButton" Content="+ Add a time" Style="{StaticResource StandardButton}" Background="Transparent" Foreground="{DynamicResource PrimaryBackground}" HorizontalAlignment="Left" Padding="4,2" Margin="0,0,0,12" Click="AddTime_Click" Visibility="Collapsed"
                                             ToolTip="Without a time, the task is due all day"/>
                                     <StackPanel x:Name="TimePanel" Orientation="Horizontal" Margin="0,0,0,12" Visibility="Collapsed">
-                                        <TextBlock Text="&#xE823;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Text="&#xE823;" FontFamily="{StaticResource IconFont}" FontSize="14" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                         <ComboBox x:Name="TimeComboBox" Width="100" MaxDropDownHeight="260" AutomationProperties.Name="Due time"/>
-                                        <Button Content="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" Style="{StaticResource ModernButton}" Background="Transparent" Padding="8,6" Margin="4,0,0,0" Click="RemoveTime_Click" ToolTip="Remove time (due all day)" AutomationProperties.Name="Remove time"/>
+                                        <Button Content="&#xE711;" FontFamily="{StaticResource IconFont}" FontSize="10" Style="{StaticResource StandardButton}" Background="Transparent" Padding="8,6" Margin="4,0,0,0" Click="RemoveTime_Click" ToolTip="Remove time (due all day)" AutomationProperties.Name="Remove time"/>
                                     </StackPanel>
                                 </StackPanel>
 
                                 <!-- 4. Notes -->
                                 <StackPanel x:Name="NotesSection" Margin="0,16,0,0">
                                     <Grid Margin="0,0,0,8">
-                                        <TextBlock Text="Description" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left"/>
+                                        <TextBlock Text="Description"  HorizontalAlignment="Left" Style="{StaticResource FieldLabel}" Margin="0"/>
                                         <TextBlock Text="{Binding ElementName=DescriptionTextBox, Path=Text.Length, StringFormat={}{0}/2000}" Visibility="{Binding ElementName=DescriptionTextBox, Path=Text.Length, Converter={StaticResource NearLimitVis}, ConverterParameter=2000}" Foreground="{DynamicResource TextMuted}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
                                     </Grid>
                                     <TextBox x:Name="DescriptionTextBox" Margin="0,0,0,18" MinHeight="60" MaxHeight="300" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" MaxLength="2000" AutomationProperties.Name="Description"/>
 
                                     <Grid Margin="0,0,0,8">
-                                        <TextBlock Text="Acceptance criteria (AC)" Foreground="{DynamicResource TextMuted}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Left"/>
+                                        <TextBlock Text="Acceptance criteria (AC)"  HorizontalAlignment="Left" Style="{StaticResource FieldLabel}" Margin="0"/>
                                         <TextBlock Text="{Binding ElementName=AcTextBox, Path=Text.Length, StringFormat={}{0}/2000}" Visibility="{Binding ElementName=AcTextBox, Path=Text.Length, Converter={StaticResource NearLimitVis}, ConverterParameter=2000}" Foreground="{DynamicResource TextMuted}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
                                     </Grid>
                                     <TextBox x:Name="AcTextBox" Margin="0,0,0,18" MinHeight="60" MaxHeight="300" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" MaxLength="2000" AutomationProperties.Name="Acceptance criteria"/>
@@ -640,20 +770,21 @@
                 <Grid>
                     <Button x:Name="DeleteTaskButton" Content="Delete" Style="{StaticResource DangerButton}" HorizontalAlignment="Left" Click="DeleteButton_Click" ToolTip="Delete task (Del) — you can undo"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="Cancel" Style="{StaticResource ModernButton}" Margin="0,0,8,0" Click="CancelButton_Click" ToolTip="Close without saving (Esc)"/>
-                        <Button x:Name="SaveAndNewButton" Content="Save &amp; new" Style="{StaticResource ModernButton}" Margin="0,0,8,0" Click="SaveAndNew_Click" ToolTip="Save and start another task (Ctrl+Enter)"/>
+                        <Button Content="Cancel" Style="{StaticResource StandardButton}" Margin="0,0,8,0" Click="CancelButton_Click" ToolTip="Close without saving (Esc)"/>
+                        <Button x:Name="SaveAndNewButton" Content="Save &amp; new" Style="{StaticResource StandardButton}" Margin="0,0,8,0" Click="SaveAndNew_Click" ToolTip="Save and start another task (Ctrl+Enter)"/>
                         <Button Content="Save task" Style="{StaticResource PrimaryButton}" Click="SaveButton_Click" ToolTip="Save (Ctrl+S)"/>
                     </StackPanel>
                 </Grid>
             </StackPanel>
         </Grid> <!-- Close TasksTabContent -->
-                <Grid x:Name="AboutTabContent" Visibility="Collapsed" Margin="28,10,28,28">
-                    <StackPanel>
-                        <TextBlock Text="About" Style="{StaticResource TitleText}" Margin="0,0,0,20"/>
-                        <TextBlock Text="Task And Ticket Tracker is a lightweight, context-aware productivity tool designed to help you stay focused on what matters." Foreground="{DynamicResource TextHighlight}" TextWrapping="Wrap" Margin="0,0,0,10" FontSize="14"/>
-                        <TextBlock Text="Version: 1.6.0.0" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,20"/>
+                <Grid x:Name="AboutTabContent" Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="{StaticResource PageGutter}" MaxWidth="{StaticResource PageContentWidth}" HorizontalAlignment="Stretch">
+                        <TextBlock Text="About" Style="{StaticResource PageTitle}"/>
+                        <TextBlock Text="Task And Ticket Tracker is a lightweight, context-aware productivity tool designed to help you stay focused on what matters." Style="{StaticResource PageSubtitle}" Margin="0,4,0,16"/>
+                        <TextBlock Text="Version: 1.7.0.0" Style="{StaticResource CaptionText}" Margin="0,0,0,20"/>
                         
-                        <TextBlock Text="What it does" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,10"/>
+                        <TextBlock Text="What it does" Style="{StaticResource SectionHeader}" Margin="0,0,0,10"/>
                         <TextBlock Text="• Capture tasks in seconds with Quick add, steps and due-date shortcuts" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,6" TextWrapping="Wrap"/>
                         <TextBlock Text="• Focus on one or two active tasks at a time, in priority order" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,6" TextWrapping="Wrap"/>
                         <TextBlock Text="• Keep your current step in view with a floating, edge-docked or taskbar widget" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,6" TextWrapping="Wrap"/>
@@ -661,32 +792,33 @@
                         <TextBlock Text="• Everything stays on this device, with automatic backups" Foreground="{DynamicResource TextHighlight}" Margin="10,0,0,20" TextWrapping="Wrap"/>
 
                         <WrapPanel Margin="0,0,0,12">
-                            <Button Width="200" Height="36" Margin="0,0,8,8" Style="{StaticResource PrimaryButton}" Click="ViewDocs_Click" ToolTip="Open the user guide (F1)" AutomationProperties.Name="Open user guide">
+                            <Button MinWidth="140" Margin="0,0,8,8" Style="{StaticResource PrimaryButton}" Click="ViewDocs_Click" ToolTip="Open the user guide (F1)" AutomationProperties.Name="Open user guide">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE897;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="&#xE897;" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <TextBlock Text="Open user guide" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
-                            <Button Content="Take the tour" Height="36" Margin="0,0,8,8" Style="{StaticResource StandardButton}" Click="StartWelcomeTour_Click" ToolTip="A one-minute tour of the app"/>
-                            <Button Content="What's new" Height="36" Margin="0,0,8,8" Style="{StaticResource StandardButton}" Click="ShowWhatsNew_Click" ToolTip="Highlights of this version"/>
+                            <Button Content="Take the tour" Margin="0,0,8,8" Style="{StaticResource StandardButton}" Click="StartWelcomeTour_Click" ToolTip="A one-minute tour of the app"/>
+                            <Button Content="What's new" Margin="0,0,8,8" Style="{StaticResource StandardButton}" Click="ShowWhatsNew_Click" ToolTip="Highlights of this version"/>
                         </WrapPanel>
                         
                         <TextBlock Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,10,0,0">
                             All data stays on this device.
-                            <Hyperlink NavigateUri="https://github.com/tanmayprasad/Task-And-Ticket-Tracker/blob/main/PRIVACY.md" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource PrimaryBackground}">Privacy Policy</Hyperlink>
+                            <Hyperlink NavigateUri="https://github.com/tanmayprasad/Task-And-Ticket-Tracker/blob/main/PRIVACY.md" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource AccentText}">Privacy Policy</Hyperlink>
                         </TextBlock>
-                        <TextBlock Text="© 2026 Tanmay Prasad. All rights reserved." Foreground="{DynamicResource TextDark}" FontSize="12" Margin="0,10,0,0"/>
+                        <TextBlock Text="© 2026 Tanmay Prasad. All rights reserved." Style="{StaticResource CaptionText}" Margin="0,10,0,0"/>
                     </StackPanel>
+                    </ScrollViewer>
                 </Grid>
             
             <!-- Profiles page: everything that belongs to a profile. Dynamic parts are filled by BuildProfilesPage (MainWindow.Profiles.cs) -->
             <Grid x:Name="ProfilesTabContent" Visibility="Collapsed">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <Grid>
-                    <StackPanel Margin="28,10,28,36" MaxWidth="1056" HorizontalAlignment="Stretch">
-                    <TextBlock Text="Profiles" Style="{StaticResource TitleText}" Margin="0,0,0,6"/>
+                    <StackPanel Margin="{StaticResource PageGutter}" MaxWidth="{StaticResource PageContentWidth}" HorizontalAlignment="Stretch">
+                    <TextBlock Text="Profiles" Style="{StaticResource PageTitle}"/>
                     <TextBlock Text="Keep separate task lists, such as Work and Personal. Each profile has its own tasks, active-task limit and reminders. Reminders arrive for every profile, even when it isn't open."
-                               Style="{StaticResource BodyText}" Margin="0,0,0,20"/>
+                               Style="{StaticResource PageSubtitle}" Margin="0,4,0,16"/>
 
                     <!-- Current profile -->
                     <Border Style="{StaticResource Card}" Padding="20,18">
@@ -832,12 +964,13 @@
             <!-- Settings Tab Content: Windows 11 Settings-style rows; every change applies instantly -->
             <Grid x:Name="SettingsTabContent" Visibility="Collapsed">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <!-- Cards fill the page up to 1000 DIP (+ margins); on wider windows the column is centred -->
+                    <!-- Same centred page column as every other tab (PageMaxWidth, PageGutter) -->
                     <Grid>
-                    <StackPanel Margin="28,10,28,36" MaxWidth="1056" HorizontalAlignment="Stretch">
-                    <TextBlock Text="Settings" Style="{StaticResource TitleText}" Margin="0,0,0,24"/>
+                    <StackPanel Margin="{StaticResource PageGutter}" MaxWidth="{StaticResource PageContentWidth}" HorizontalAlignment="Stretch">
+                    <TextBlock Text="Settings" Style="{StaticResource PageTitle}"/>
+                    <TextBlock Text="Changes apply instantly." Style="{StaticResource PageSubtitle}" Margin="0,4,0,16"/>
 
-                    <TextBlock Text="Profiles" Style="{StaticResource BodyStrongText}" Margin="0,0,0,8"/>
+                    <TextBlock Text="Profiles" Style="{StaticResource SectionHeader}" Margin="0,0,0,8"/>
                     <Border Style="{StaticResource SettingRow}">
                         <Grid>
                             <Grid.ColumnDefinitions>

@@ -4,6 +4,31 @@ All notable changes to the **Task and Ticket Tracker** project will be documente
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to the specific versioning rules defined in `PACKAGING_CONFIG.md`.
 
+## [1.7.0.0] - 2026-10-19
+
+### Store release notes
+- New History page: see the tasks you finished and the steps you ticked today, yesterday and the three days before. Each task shows its status and step progress; click one to open it.
+- Every page now follows the same layout: the same title position, margins and a centred column, with a short subtitle on each tab. The About page scrolls on small windows.
+- Fixed: switching between active tasks, or minimizing to the widget, now shows the first step that is not done instead of one you already ticked.
+- Fixed: the mouse wheel now scrolls the form when the pointer is over the steps list.
+- Better keyboard and screen-reader support: task rows in History, step controls and state filters have names and focus states.
+
+### Added
+- **History page** (`DoneLog.cs`, navigation pane). Lists, for today, yesterday and the three days before, the tasks marked Done and the steps ticked that day, newest first. Each row shows the task's current status, whole-task step progress ("2/3 Steps"), the ticket number and title, and the steps ticked that day. A day shows "1 task · 3 steps". Clicking or pressing Enter opens the task in the details panel, even if filters hide it.
+- **Completion times** (`TaskModel.CompletedAt`, `TicketStep.CompletedAt`): recorded when a task is marked Done or a step is ticked, cleared when reopened. Older tasks have no time and do not appear in History. Backward compatible with existing `tasks.json`; carried through import and merge (a CSV import keeps recorded times).
+- "What's new" tour step for History.
+- Unit tests for completion tracking, the History page, the widget step choice and the XAML layout rules.
+
+### Changed
+- **One page frame:** shared `PageTitle`, `PageSubtitle`, `SectionHeader`, `PageGutter` and `PageContentWidth` styles; every tab uses the same margins and a centred column up to 1200 wide. About is scrollable.
+- Details-form labels use the shared `FieldLabel` style; legacy button and icon-font names replaced by the shared ones; the quick-add box matches the card radius.
+
+### Fixed
+- Switching between two active tasks showed step 1 even when it was already marked; it now shows the first open step.
+- Minimizing to the widget could show an already-done step; the widget re-aims at the first open step unless you paged to a step yourself.
+- Mouse-wheel scrolling did nothing over the steps list in the task form.
+- Accessible names added to the step checkbox, step text, remove button and state filters.
+
 ## [1.6.0.0] - 2026-10-11
 
 ### Store release notes
